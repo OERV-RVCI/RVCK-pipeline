@@ -2,8 +2,6 @@
 set -e
 set -x
 
-: > COMMENT_CONTENT
-
 repo_name=$(echo ${REPO##h*/} | awk -F'.' '{print $1}')
 qemu_job_name=${repo_name}_pr_${ISSUE_ID}
 device_type=$(yq .device_type "${lava_template}")
@@ -43,7 +41,8 @@ else
         v="${l#"${k}="}"
         echo "key: $k, value: $v"
         if ! grep -q "\${$k}" "${lava_template}"; then
-            echo "key=$k is not found in ${lava_template}"
+            echo "Lava check fail! key=$k is not found in ${lava_template}" > COMMENT_CONTENT
+            cat COMMENT_CONTENT
             exit 1
         fi
 
@@ -59,7 +58,7 @@ lava_result_url=https://${lava_server}/scheduler/job/${lava_jobid}
 lava_result=$(lavacli_admim jobs show ${lava_jobid} | yq .health)
 
 if [ ${lava_result} = "Complete" ];then
-	echo "Lava check pass! result url: ${lava_result_url}" > COMMENT_CONTENT
+	echo "Lava check done! result url: ${lava_result_url}" > COMMENT_CONTENT
 else
 	echo "Lava check fail! result url: ${lava_result_url}" > COMMENT_CONTENT
 	exit 1

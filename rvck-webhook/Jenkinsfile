@@ -3,8 +3,9 @@ node('jenkins-agent-gh-docker') {
     stage("checkout scm") {
         cleanWs()
         checkout scm
+        load('src/config.groovy')
     }
-    
+
     stage("properties") {
         if (params.WEBHOOK_TOKEN == '') {
             error 'WEBHOOK_TOKEN is empty'
@@ -15,6 +16,7 @@ node('jenkins-agent-gh-docker') {
         echo "Webhook token: ${webhook_token}"
 
         properties([
+            disableConcurrentBuilds(),
             parameters([
                 string(defaultValue: webhook_token, description: 'webhook 请求token', name: 'WEBHOOK_TOKEN', trim: true),
             ]),
@@ -39,28 +41,51 @@ node('jenkins-agent-gh-docker') {
             sh 'python3 rvck-webhook/run.py'
         }
     }
-    
-    stage("trigger kernel build") {
-        load 'config.groovy'
-
-        echo "all keys: ${kernel_build_params_keys}"
-        def kernelBuildParams = kernel_build_params_keys.findAll{ fileExists(it) }.collect {
-            string(name: it, value: readFile(it))
+    if (fileExists("REPO") && fileExists("ISSUE_ID")) {
+        stage("set gh label") {
+            build wait: false, job: 'gh_actions', parameters: [
+                string(name: 'REPO', value: readFile('REPO')),
+                string(name: 'ISSUE_ID', value: readFile("ISSUE_ID")),
+                string(name: 'COMMENT_CONTENT', value: '开始测试'),
+                string(name: 'ADD_LABEL', value: "kernel_waiting,lava_waiting,kunit-test_waiting"),
+                string(name: 'REMOVE_LABEL', value: label_group.values().collectMany { it }.join(',')),
+            ]
         }
-        
-        echo "kernelBuildParams: ${kernelBuildParams}"
 
-        if(kernelBuildParams.size()) {
-            stage("run kernel and gh_actions") {
-                build wait: false, job: 'gh_actions', parameters: [
-                    string(name: 'REPO', value: readFile('REPO')),
-                    string(name: 'ISSUE_ID', value: readFile("ISSUE_ID")),
-                    string(name: 'COMMENT_CONTENT', value: '开始测试'),
-                    string(name: 'SET_LABEL', value: 'kernel_building,lava_waiting'),
-                ]
+        stage("trigger kernel build") {
 
+            echo "all keys: ${kernel_build_params_keys}"
+            def kernelBuildParams = kernel_build_params_keys.findAll{ fileExists(it) }.collect {
+                string(name: it, value: readFile(it))
+            }
+            
+            echo "kernelBuildParams: ${kernelBuildParams}"
+
+            if(kernelBuildParams.size()) {
                 build wait: false, job: 'rvck-kernel-build', parameters: kernelBuildParams
             }
         }
+
+        stage("trigger check patch") {
+
+            echo "all keys: ${check_patch_params_keys}"
+            def check_patch_params = check_patch_params_keys.findAll{ fileExists(it) }.collect {
+                string(name: it, value: readFile(it))
+            }
+            
+            echo "check_patch_params: ${check_patch_params}"
+
+            if(check_patch_params.size() == check_patch_params_keys.size()) {
+                build wait: false, job: 'gh_actions', parameters: [
+                string(name: 'REPO', value: readFile('REPO')),
+                string(name: 'ISSUE_ID', value: readFile("ISSUE_ID")),
+                string(name: 'ADD_LABEL', value: "check-patch_waiting"),
+            ]
+                build wait: false, job: 'check-patch', parameters: check_patch_params
+            }
+        }
+    } else {
+        echo "REPO or ISSUE_ID not found. skip request"
+        currentBuild.result = 'ABORTED'
     }
 }

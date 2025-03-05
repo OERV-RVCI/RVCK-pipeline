@@ -1,0 +1,54 @@
+node("check-patch-node") {
+    stage("checkout scm") {
+        cleanWs()
+        checkout scm
+        load('src/config.groovy')
+    }
+    def isAnyParams = params && params.size() != 0
+
+    stage("properties") {
+        properties([
+            disableConcurrentBuilds(),
+            parameters(check_patch_params_keys.collect {
+                all_params[it]
+            }),
+        ])
+    }
+
+    if (isAnyParams) {
+            
+        stage("check patch") {
+            dir("work") {
+                catchError {
+                    // 更新github状态
+                    build wait: false, job: 'gh_actions', parameters: [
+                        string(name: 'REPO', value: REPO),
+                        string(name: 'ISSUE_ID', value: ISSUE_ID),
+                        string(name: 'REMOVE_LABEL', value: label_group["check-patch"].join(",")),
+                        string(name: 'ADD_LABEL', value: "check-patch_checking"),
+                    ]
+
+                    sh "bash $WORKSPACE/src/init_env.sh"
+
+                    // 拉取分支
+                    sh "bash ../src/git-fetch-in-dir.sh '${FETCH_REF}' '${SRC_REF}'"
+                    
+                    // 检查
+                    sh 'bash ../check-patch/check-patch.sh'
+
+                    sh 'cat check-patch-result'
+
+                    
+                }
+            }
+            // 更新github状态
+            build wait: false, job: 'gh_actions', parameters: [
+                string(name: 'REPO', value: REPO),
+                string(name: 'ISSUE_ID', value: ISSUE_ID),
+                string(name: 'COMMENT_CONTENT', value: "check patch done. log: ${BUILD_URL}consoleFull"),
+                string(name: 'REMOVE_LABEL', value: label_group["check-patch"].join(",")),
+                string(name: 'ADD_LABEL', value: "check-patch_done"),
+            ]
+        }
+    }
+}

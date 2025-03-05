@@ -92,7 +92,6 @@ def pull_request(payload: dict):
     res["REPO"] = payload["repository"]["clone_url"]
     res["ISSUE_ID"] = payload["number"]
     res["FETCH_REF"] = get_pr_fetch_ref(res["ISSUE_ID"], res["REPO"])
-    # res["PATCH_URL"] = payload["patch_url"]
 
     write_properties_file(res)
 

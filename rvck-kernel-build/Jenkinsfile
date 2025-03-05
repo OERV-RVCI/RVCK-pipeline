@@ -1,78 +1,99 @@
 
 node('jenkins-agent-docker-sg2042') {
-
-    def kernel_build_params
-    def lava_trigger_params
-    def script_content = ""
-
     stage("checkout scm") {
         cleanWs()
-        node("jenkins-agent-lavacli-docker") {
-            cleanWs()
-            checkout scm
-            load('config.groovy')
-
-            kernel_build_params = kernel_build_params_keys.collect {
-                all_params[it]
-            }
-            lava_trigger_params = lava_trigger_params_keys.findAll {
-                                        params.containsKey(it)
-                                    }.collect {
-                                        string(name: it, value: params[it])
-                                    }
-            script_content = readFile 'rvck-kernel-build/run.sh'
-        }
+        checkout scm
     }
+    def conf = load("src/config.groovy")
 
     def isAnyParams = params.size() != 0
-    
 
     stage("properties") {
         properties([
-            parameters(kernel_build_params),
+            disableConcurrentBuilds(),
+            parameters(conf.kernel_build_params_keys.collect {
+                conf.all_params[it]
+            }),
         ])
     }
     
     if(isAnyParams) {
-       
-        stage("build") {
-            timestamps {
-                try {
-                    // 执行构建脚本
-                    sh script_content
-                    
-                    // 更新github状态
-                    build wait: false, job: 'gh_actions', parameters: [
-                        string(name: 'REPO', value: REPO),
-                        string(name: 'ISSUE_ID', value: ISSUE_ID),
-                        string(name: 'COMMENT_CONTENT', value: 'Kernel build success!'),
-                        string(name: 'SET_LABEL', value: 'kernel_build_succeed,lava_checking'),
-                    ]
-                    
-                    // 触发lava测试
-                    
-                    
-                    lava_trigger_params += [
-                        string(name: 'rootfs_download_url', value: readFile('rootfs_download_url')),
-                        string(name: 'kernel_download_url', value: readFile('kernel_download_url')),
-                    ]
-                    echo "lava_trigger_params: ${lava_trigger_params}"
-                    
-                    build wait: false, job: 'rvck-lava-trigger', parameters: lava_trigger_params
-                } catch (err) {
-                    
-                    build wait: false, job: 'gh_actions', parameters: [
-                        string(name: 'REPO', value: REPO),
-                        string(name: 'ISSUE_ID', value: ISSUE_ID),
-                        string(name: 'COMMENT_CONTENT', value: "Kernel build failed! log:${BUILD_URL}consoleFull"),
-                        string(name: 'SET_LABEL', value: 'kernel_build_failed'),
-                    ]
+        stage("trigger kunit test") {
 
-                    currentBuild.result = 'FAILURE'
-                    throw err
+            echo "all keys: ${kunit_test_params_keys}"
+            def kunit_test_params = kunit_test_params_keys.collect {
+                string(name: it, value: params[it])
+            }
+            
+            echo "kunit_test_params: ${kunit_test_params}"
+
+            if(kunit_test_params.size() == kunit_test_params_keys.size()) {
+                build wait: false, job: 'kunit-test', parameters: kunit_test_params
+            }
+        }
+        
+        stage("kernel build") {
+            build wait: false, job: 'gh_actions', parameters: [
+                string(name: 'REPO', value: REPO),
+                string(name: 'ISSUE_ID', value: ISSUE_ID),
+                string(name: 'REMOVE_LABEL', value: conf.label_group["kernel"].join(",")),
+                string(name: 'ADD_LABEL', value: 'kernel_building'),
+            ]
+
+            dir("work") {
+                timestamps {
+                    try {
+                        sh "bash $WORKSPACE/src/init_env.sh"
+
+                        // 拉取仓库
+                        withEnv(["GIT_FETCH_DEPTH=1"]) {
+                            sh "bash $WORKSPACE/src/git-fetch-in-dir.sh ${FETCH_REF}"
+                        }
+                        // 执行构建脚本
+                        sh "bash $WORKSPACE/rvck-kernel-build/run.sh"
+                        
+                        // 更新github状态
+                        build wait: false, job: 'gh_actions', parameters: [
+                            string(name: 'REPO', value: REPO),
+                            string(name: 'ISSUE_ID', value: ISSUE_ID),
+                            string(name: 'COMMENT_CONTENT', value: 'Kernel build success!'),
+                            string(name: 'REMOVE_LABEL', value: conf.label_group["kernel"].join(",")),
+                            string(name: 'ADD_LABEL', value: 'kernel_build_succeed'),
+                        ]
+                    } catch (err) {
+                        
+                        build wait: false, job: 'gh_actions', parameters: [
+                            string(name: 'REPO', value: REPO),
+                            string(name: 'ISSUE_ID', value: ISSUE_ID),
+                            string(name: 'COMMENT_CONTENT', value: "Kernel build failed! log:${BUILD_URL}consoleFull"),
+                            string(name: 'REMOVE_LABEL', value: [conf.label_group["kernel"], conf.label_group["lava"]].collectMany { it }.join(",")),
+                            string(name: 'ADD_LABEL', value: 'kernel_build_failed'),
+                        ]
+
+                        currentBuild.result = 'FAILURE'
+                        throw err
+                    }
                 }
             }
         }
+
+        stage("trigger lava") {
+            // 触发lava测试
+            def lava_trigger_params = conf.lava_trigger_params_keys.findAll {
+                            params.containsKey(it)
+                        }.collect {
+                            string(name: it, value: params[it])
+                        }
+
+            lava_trigger_params += [
+                string(name: 'rootfs_download_url', value: readFile('work/rootfs_download_url')),
+                string(name: 'kernel_download_url', value: readFile('work/kernel_download_url')),
+            ]
+
+            echo "lava_trigger_params: ${lava_trigger_params}"
+            
+            build wait: false, job: 'rvck-lava-trigger', parameters: lava_trigger_params
+        }
+
     }
-    
 }

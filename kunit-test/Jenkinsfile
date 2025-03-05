@@ -1,0 +1,53 @@
+node("kunit-test-node") {
+    stage("checkout scm") {
+        cleanWs()
+        checkout scm
+        load('src/config.groovy')
+    }
+
+    def isAnyParams = params && params.size() != 0
+
+    stage("properties") {
+        properties([
+            disableConcurrentBuilds(),
+            parameters(kunit_test_params_keys.collect {
+                all_params[it]
+            }),
+        ])
+    }
+
+    if (isAnyParams) {
+            
+        stage("kunit test") {
+            dir("work") {
+                catchError {
+                    
+                    build wait: false, job: 'gh_actions', parameters: [
+                        string(name: 'REPO', value: REPO),
+                        string(name: 'ISSUE_ID', value: ISSUE_ID),
+                        string(name: 'REMOVE_LABEL', value: label_group["kunit"].join(",")),
+                        string(name: 'ADD_LABEL', value: 'kunit-test_checking'),
+                    ]
+
+                    sh "bash $WORKSPACE/src/init_env.sh"
+                    
+                    // 拉取分支
+                    withEnv(["GIT_FETCH_DEPTH=1"]) {
+                        sh "bash $WORKSPACE/src/git-fetch-in-dir.sh ${FETCH_REF}"
+                    }
+                    
+                    // 检查
+                    sh "bash $WORKSPACE/kunit-test/kunit-test.sh"
+
+                }
+            }
+            build wait: false, job: 'gh_actions', parameters: [
+                string(name: 'REPO', value: REPO),
+                string(name: 'ISSUE_ID', value: ISSUE_ID),
+                string(name: 'COMMENT_CONTENT', value: "kunit test done. log:${BUILD_URL}consoleFull"),
+                string(name: 'REMOVE_LABEL', value: label_group["kunit"].join(",")),
+                string(name: 'ADD_LABEL', value: 'kunit-test_done'),
+            ]
+        }
+    }
+}

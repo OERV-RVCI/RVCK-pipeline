@@ -8,8 +8,9 @@ node('jenkins-agent-gh-docker') {
     def isAnyParams = params.size() != 0
 
     stage("properties") {
-        load('config.groovy')
+        load('src/config.groovy')
         properties([
+            disableConcurrentBuilds(),
             parameters(gh_actions_params_keys.collect {
                 all_params[it]
             }),
@@ -19,12 +20,7 @@ node('jenkins-agent-gh-docker') {
     if(isAnyParams) {
         stage('gh actions') {
             withCredentials([string(credentialsId: 'rvck_gh_token', variable: 'GH_TOKEN')]) {
-                def all_label_str = all_label.join(',')
-                withEnv([
-                    "CONFIG_all_labels=${all_label_str}"
-                ]) {
-                    sh 'bash gh_actions/run.sh'
-                }
+                sh 'bash gh_actions/run.sh'
             }
         }
     }

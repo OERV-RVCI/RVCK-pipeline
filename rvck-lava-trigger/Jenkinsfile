@@ -11,8 +11,9 @@ node("jenkins-agent-lavacli-docker") {
 
     stage("properties") {
         // 设置参数化构建
-        load('pipeline_scm/config.groovy')
+        load('pipeline_scm/src/config.groovy')
         properties([
+            disableConcurrentBuilds(),
             parameters(lava_trigger_params_keys.collect {
                 all_params[it]
             }),
@@ -35,14 +36,24 @@ node("jenkins-agent-lavacli-docker") {
             def lava_scripts = readFile 'pipeline_scm/rvck-lava-trigger/run.sh'
             timestamps {
                 dir("lavaci") {
+                    sh 'echo "Lava check fail! log: ${BUILD_URL}consoleFull" > COMMENT_CONTENT'
                     try {
-                        withCredentials([usernameColonPassword(credentialsId: 'dd2c86ed-f19e-445b-9fc8-5d2c2b23ecd2', variable: 'lava_admin_token')]) {
-                            sh lava_scripts
-                        }
+
                         build wait: false, job: 'gh_actions', parameters: [
                             string(name: 'REPO', value: params.REPO),
                             string(name: 'ISSUE_ID', value: params.ISSUE_ID),
-                            string(name: 'ADD_LABEL', value: 'lava_check_pass'),
+                            string(name: 'ADD_LABEL', value: 'lava_checking'),
+                            string(name: 'REMOVE_LABEL', value: label_group["lava"].join(",")),
+                        ]
+
+                        withCredentials([usernameColonPassword(credentialsId: 'dd2c86ed-f19e-445b-9fc8-5d2c2b23ecd2', variable: 'lava_admin_token')]) {
+                            sh lava_scripts
+                        }
+                        
+                        build wait: false, job: 'gh_actions', parameters: [
+                            string(name: 'REPO', value: params.REPO),
+                            string(name: 'ISSUE_ID', value: params.ISSUE_ID),
+                            string(name: 'ADD_LABEL', value: 'lava_check_done'),
                             string(name: 'REMOVE_LABEL', value: label_group["lava"].join(",")),
                             string(name: 'COMMENT_CONTENT', value: readFile('COMMENT_CONTENT')),
                         ]
