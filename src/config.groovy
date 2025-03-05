@@ -1,9 +1,9 @@
 
 all_params_desc = [
     'REPO': '指定所属仓库, 用于gh ... -R "$REPO"',
-    "FETCH_REF": '代码分支或commit_sha',
+    "FETCH_REF": '需要拉取的代码分支或commit_sha',
+    'SRC_REF': "pr 请求时, 源分支",
     'ISSUE_ID': '需要评论的issue|pr id',
-    "PATCH_URL": '要合入的patch连接, git am 合入到BASE_REF, 为空时直接使用BASE_REF构建',
     
     'kernel_download_url': '内核下载链接',
     'rootfs_download_url': 'rootfs下载链接',
@@ -28,6 +28,12 @@ all_params = all_params_desc.collectEntries { name, desc ->
     [(name): string(name: name, description: desc, trim: true, defaultValue: params_defaultvalue.get(name, ''))]
 }
 
+check_patch_params_keys = [
+    "REPO",
+    "ISSUE_ID",
+    "FETCH_REF",
+    "SRC_REF",
+]
 
 kernel_build_params_keys = [
     "REPO",
@@ -58,6 +64,12 @@ lava_trigger_params_keys = [
     "testcase_params",
 ]
 
+kunit_test_params_keys = [
+    "REPO",
+    "ISSUE_ID",
+    "FETCH_REF",
+]
+
 label_group = [
     "kernel":[
         "kernel_build_failed",
@@ -71,7 +83,6 @@ label_group = [
         "lava_waiting",
     ]
 ]
-
 all_label = label_group.values().collectMany { it }
 
 return this

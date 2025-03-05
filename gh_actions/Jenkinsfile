@@ -8,7 +8,7 @@ node('jenkins-agent-gh-docker') {
     def isAnyParams = params.size() != 0
 
     stage("properties") {
-        load('config.groovy')
+        load('src/config.groovy')
         properties([
             parameters(gh_actions_params_keys.collect {
                 all_params[it]
