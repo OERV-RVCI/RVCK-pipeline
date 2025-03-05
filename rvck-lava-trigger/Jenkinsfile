@@ -11,7 +11,7 @@ node("jenkins-agent-lavacli-docker") {
 
     stage("properties") {
         // 设置参数化构建
-        load('pipeline_scm/config.groovy')
+        load('pipeline_scm/src/config.groovy')
         properties([
             parameters(lava_trigger_params_keys.collect {
                 all_params[it]

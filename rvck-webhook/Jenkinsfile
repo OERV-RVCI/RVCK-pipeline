@@ -3,8 +3,9 @@ node('jenkins-agent-gh-docker') {
     stage("checkout scm") {
         cleanWs()
         checkout scm
+        load('src/config.groovy')
     }
-    
+
     stage("properties") {
         if (params.WEBHOOK_TOKEN == '') {
             error 'WEBHOOK_TOKEN is empty'
@@ -40,8 +41,35 @@ node('jenkins-agent-gh-docker') {
         }
     }
     
+    stage("trigger check patch") {
+
+        echo "all keys: ${check_patch_params_keys}"
+        def check_patch_params = check_patch_params_keys.findAll{ fileExists(it) }.collect {
+            string(name: it, value: readFile(it))
+        }
+        
+        echo "check_patch_params: ${check_patch_params}"
+
+        if(check_patch_params.size() == check_patch_params_keys.size()) {
+            build wait: false, job: 'check-patch', parameters: check_patch_params
+        }
+    }
+
+    stage("trigger kunit test") {
+
+        echo "all keys: ${kunit_test_params_keys}"
+        def kunit_test_params = kunit_test_params_keys.findAll{ fileExists(it) }.collect {
+            string(name: it, value: readFile(it))
+        }
+        
+        echo "kunit_test_params: ${kunit_test_params_keys}"
+
+        if(kunit_test_params.size() == kunit_test_params.size()) {
+            build wait: false, job: 'kunit-test', parameters: kunit_test_params
+        }
+    }
+
     stage("trigger kernel build") {
-        load 'config.groovy'
 
         echo "all keys: ${kernel_build_params_keys}"
         def kernelBuildParams = kernel_build_params_keys.findAll{ fileExists(it) }.collect {
@@ -51,16 +79,14 @@ node('jenkins-agent-gh-docker') {
         echo "kernelBuildParams: ${kernelBuildParams}"
 
         if(kernelBuildParams.size()) {
-            stage("run kernel and gh_actions") {
-                build wait: false, job: 'gh_actions', parameters: [
-                    string(name: 'REPO', value: readFile('REPO')),
-                    string(name: 'ISSUE_ID', value: readFile("ISSUE_ID")),
-                    string(name: 'COMMENT_CONTENT', value: '开始测试'),
-                    string(name: 'SET_LABEL', value: 'kernel_building,lava_waiting'),
-                ]
+            build wait: false, job: 'gh_actions', parameters: [
+                string(name: 'REPO', value: readFile('REPO')),
+                string(name: 'ISSUE_ID', value: readFile("ISSUE_ID")),
+                string(name: 'COMMENT_CONTENT', value: '开始测试'),
+                string(name: 'SET_LABEL', value: 'kernel_building,lava_waiting'),
+            ]
 
-                build wait: false, job: 'rvck-kernel-build', parameters: kernelBuildParams
-            }
+            build wait: false, job: 'rvck-kernel-build', parameters: kernelBuildParams
         }
     }
 }

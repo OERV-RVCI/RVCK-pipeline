@@ -1,0 +1,41 @@
+node("jenkins-agent-gh-docker || jenkins-agent-lavacli-docker") {
+    stage("checkout scm") {
+        cleanWs()
+        checkout scm
+        load('src/config.groovy')
+    }
+
+    def isAnyParams = params && params.size() != 0
+
+    stage("properties") {
+        properties([
+            parameters(kunit_test_params_keys.collect {
+                all_params[it]
+            }),
+        ])
+    }
+
+    if (isAnyParams) {
+            
+        stage("kunit test") {
+            dir("work") {
+                try {
+                    sh "bash $WORKSPACE/src/init_env.sh"
+                    
+                    // 拉取分支
+                    withEnv(["GIT_FETCH_DEPTH=1"]) {
+                        sh "bash $WORKSPACE/src/git-fetch-in-dir.sh ${FETCH_REF}"
+                    }
+                    
+                    // 检查
+                    sh "bash $WORKSPACE/kunit-test/kunit-test.sh"
+
+                } catch(err) {
+
+                    currentBuild.result = 'FAILURE'
+                    throw err
+                }
+            }
+        }
+    }
+}

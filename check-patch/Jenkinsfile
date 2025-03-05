@@ -1,0 +1,40 @@
+node("jenkins-agent-gh-docker || jenkins-agent-lavacli-docker") {
+    stage("checkout scm") {
+        cleanWs()
+        checkout scm
+        load('src/config.groovy')
+    }
+    def isAnyParams = params && params.size() != 0
+
+    stage("properties") {
+        properties([
+            parameters(check_patch_params_keys.collect {
+                all_params[it]
+            }),
+        ])
+    }
+
+    if (isAnyParams) {
+            
+        stage("check patch") {
+            dir("work") {
+                try {
+                    sh "bash $WORKSPACE/src/init_env.sh"
+
+                    // 拉取分支
+                    sh "bash ../src/git-fetch-in-dir.sh '${FETCH_REF}' '${SRC_REF}'"
+                    
+                    // 检查
+                    sh 'bash ../check-patch/check-patch.sh'
+
+                    // TODO: 结果处理
+                    sh 'cat check-patch-result'
+                } catch(err) {
+
+                    currentBuild.result = 'FAILURE'
+                    throw err
+                }
+            }
+        }
+    }
+}
