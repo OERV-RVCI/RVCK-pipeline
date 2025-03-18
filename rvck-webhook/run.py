@@ -38,18 +38,17 @@ def parse_comment(comment: str):
         if k in res and os.system(f'gh api repos/RVCK-Project/lavaci/contents/{res[k]}'):
             raise Exception(f"{k}={res[k]} not found in RVCK-Project/lavaci")
 
+    print("\n\n--------------------------------")
     for k, v in res.items():
         print(f"{k} = '{v}'")
-    
+    print("--------------------------------\n")
+
     return res
 
-def get_pr_fetch_ref(pr_id, repo):
-    """pr 源分支及目标分支, 检查是否可合入mergeable """
-
-    mergeable = json.loads(os.popen(f"gh pr view {pr_id} --json mergeable -R {repo}").read())["mergeable"]
-    if mergeable != "MERGEABLE":
-        raise Exception(f"{repo}, pr={pr_id}, mergeable: {mergeable}, is not 'MERGEABLE'")
-    return f"pull/{pr_id}/head"
+def get_pr_src_ref(pr_id, repo):
+    """pr base分支"""
+    return json.loads(os.popen(f"gh pr view {pr_id} --json baseRefName -R {repo}").read())["baseRefName"]
+    
 
 def issue_comment(payload: dict):
     """pr|issue comment 触发"""
@@ -68,7 +67,8 @@ def issue_comment(payload: dict):
 
     # FETCH_REF
     if "pull_request" in payload["issue"]:  # pr
-        res["FETCH_REF"] = get_pr_fetch_ref(res["ISSUE_ID"], res["REPO"])
+        res["FETCH_REF"] = f"pull/{res['ISSUE_ID']}/head"
+        res["SRC_REF"] = get_pr_src_ref(res["ISSUE_ID"], res["REPO"])
         # res["PATCH_URL"] = payload["issue"]["pull_request"]["patch_url"]
     else:
         if "fetch" not in res:
@@ -91,7 +91,8 @@ def pull_request(payload: dict):
 
     res["REPO"] = payload["repository"]["clone_url"]
     res["ISSUE_ID"] = payload["number"]
-    res["FETCH_REF"] = get_pr_fetch_ref(res["ISSUE_ID"], res["REPO"])
+    res["FETCH_REF"] = f"pull/{res['ISSUE_ID']}/head"
+    res["SRC_REF"] = get_pr_src_ref(res["ISSUE_ID"], res["REPO"])
 
     write_properties_file(res)
 
