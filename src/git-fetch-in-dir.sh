@@ -26,6 +26,7 @@ for fetch_ref in "$@"; do
             res=true
             break
         fi
+        sleep 5
     done
     if [ "$res" != "true" ]; then
         exit 1
