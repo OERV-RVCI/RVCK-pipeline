@@ -33,6 +33,7 @@ node("check-patch-node") {
                     // 拉取分支
                     sh "bash ../src/git-fetch-in-dir.sh '${FETCH_REF}' '${SRC_REF}'"
                     
+
                     // 检查
                     sh 'bash ../check-patch/check-patch.sh'
 
