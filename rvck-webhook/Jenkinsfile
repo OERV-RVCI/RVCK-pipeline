@@ -10,8 +10,8 @@ node('jenkins-agent-gh-docker') {
         if (params.WEBHOOK_TOKEN == '') {
             error 'WEBHOOK_TOKEN is empty'
         }
-        
-        def webhook_token = params.WEBHOOK_TOKEN ?: 'N7mDZmUqGPU$mXD'
+        random = sh returnStdout: true, script: 'date +%s'
+        def webhook_token = params.WEBHOOK_TOKEN ?: random
 
         echo "Webhook token: ${webhook_token}"
 

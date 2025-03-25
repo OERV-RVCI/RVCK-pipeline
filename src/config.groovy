@@ -1,4 +1,4 @@
-
+// 所有参数，参数描述
 all_params_desc = [
     'REPO': '指定所属仓库, 用于gh ... -R "$REPO"',
     "FETCH_REF": '需要拉取的代码分支或commit_sha',
@@ -17,15 +17,19 @@ all_params_desc = [
     'REMOVE_LABEL': "删除标签，多个以英文逗号 ',' 分割",
 ]
 
+// 参数默认值
 params_defaultvalue = [
     "testcase_repo": 'https://github.com/RVCK-Project/lavaci.git',
     "lava_template": "lava-job-template/qemu/qemu-ltp.yaml",
     "testcase_url": "lava-testcases/common-test/ltp/ltp.yaml",
 ]
 
+// 整合为jenkins params类型, map<参数名, 参数>
 all_params = all_params_desc.collectEntries { name, desc ->
     [(name): string(name: name, description: desc, trim: true, defaultValue: params_defaultvalue.get(name, ''))]
 }
+
+// 流水线参数会通过 xxx_pipeline_params = xxx_pipeline_keys.collect { all_params[it] } 获取
 
 check_patch_params_keys = [
     "REPO",

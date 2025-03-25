@@ -3,44 +3,126 @@
 [RVCK-Project](https://github.com/RVCK-Project) 项目 **CI** 的**Jenkinsfile**
 
 ## 项目地址
+
 |支持的Github仓库地址|
 |---|
 |https://github.com/RVCK-Project/rvck|
 |https://github.com/RVCK-Project/rvck-olk|
 |https://github.com/RVCK-Project/lavaci|
 
-## 服务/工具
-|服务/工具|
-|---|
-|[Jenkins](https://www.jenkins.io/doc/)|
-|[Kernelci](https://github.com/kernelci/dashboard)|
-|[Lava](https://docs.lavasoftware.org/lava/index.html)|
-|[gh](https://github.com/cli/cli#installation)|
-|[lavacli](https://build.tarsier-infra.isrc.ac.cn/package/show/home:Suyun/lavacli)|
 
 ## 需求
 |需求|完成状态|
 |---|---|
 |仓库的**PR**要自动触发**LAVA**内核测试，并回复结果至**PR**下|**done**|
-|**/check**添加参数功能|**to do**|
-|仓库的**ISSUE**里要能触发**LAVA**内核测试，并回复结果至**ISSUE**里|**to do**|
+|**/check**添加参数功能|**done**|
+|仓库的**ISSUE**里要能触发**LAVA**内核测试，并回复结果至**ISSUE**里|**done**|
+|**kunit-test, check-patch** 检查|**done**|
 
-## 实现
-### 实现思路
-PR/issue -> webhook -> jenkins job -> 分析 issue:/check sg2042 commitid , PR： /check -> gh 回复 开始，并打标签 -> kernel 构建 -> gh回复构建结果，并打标签 -> 触发lavacli -> Lava -> Lava agent（qemu sg2042 lpi4a unmatched visionfive2 k1）-> 结果显示网页kernelci -> lavacli 获取结果（result,url）-> gh回复结果，并打标签 -> issue/pr 
 
-#### job
+## 流程
 
-##### rvck/rvck-webhook
+- PR|issue|评论 -> webhook -> 触发流水线 -> 解析参数,确认参数是否合法,是否触发后续构建
+- 每条检查流水线开始和结束时，通过 `gh` 更新对应标签
+- 每条检查流水线结束时，通过 `gh` 更新结果和log链接到评论区
 
-* 识别 `ISSUE`、 `ISSUE|PR comments`、`PR`中的 `/check` 指令
-* 有PR时就会回复开始测试。并返回结果
-* 获取PR的id并向kernel-build传递
-* 获取PR的url并向kernel-build传递
-* 获取需要回复信息的URL
-* 获取 /check 的参数，并传递给`rvck-lava-trigger`
+```mermaid
+flowchart TB
+    A(github 事件) -- pr|issue|评论 webhook --> B
+    subgraph B[rvck-webhook pipeline]
+    B1[[参数解析]] --> B2{{参数合法，继续执行检查?}} 
+    B2 -- NO --> B3([ignore, end])
+    end
+    B2 -- YES --- B4((.))
+    
+    subgraph C[kernel-build pipeline]
+        C1[[内核构建]] --> C2{{构建成功?}} -- NO --> C3([end])
+    end
+    B4 --> C
+    B4 --> D[kunit-test pipeline]
+    B4 --> E1{{is pr ?}} -- YES --> E[check-patch pipeline]
+    E1 -- NO --> E2([end])
+    C2 -- YES --> F[lava-trigger pipeline]
+```
 
-###### /check 参数解析
+## Jenkins 搭建
+
+### Jenkins plugin
+
+- https://plugins.jenkins.io/generic-webhook-trigger
+- https://plugins.jenkins.io/rebuild
+
+### Jenkins agent
+
+|架构|获取地址| 
+|---|---|
+|x86|hub.oepkgs.net/oerv-ci/jenkins-agent-lavacli-gh:latest|
+|riscv64|hub.oepkgs.net/oerv-ci/jenkins-sshagent:latest|
+
+**注意事项**：
+
+- agent 初始化时需要配置`LC_ALL LANG`等环境变量。否则无法流水线无法正确加载utf-8编码文件，部分场景报错
+- Docker Compose v1切换到Docker Compose v2 ,需使用 docker compose 启动：
+        https://docs.docker.com/compose/install/linux/#install-the-plugin-manually
+
+### Jenkins Credentials 凭证管理
+
+> https://JENKINS_URL/manage/credentials/
+
+|凭证id|用途说明|
+|---|---|
+|rvck_gh_token|gh 命令, 鉴权token, `gh ... --with-token` or `GH_TOKEN=${rvck_gh_token} gh ...`|
+
+### 新建流水线
+
+#### 初始化
+
+- 新建item, 类型选择pipeline
+- 配置流水线脚本来源为 `scm`
+  - 配置`Jenkinsfile`从代码仓库拉取，配置`代码仓库  分支  脚本路径`
+- 保存后，执行一次构建, `properties`会配置好流水线其他配置(`参数化构建 是否并行构建 触发方式` 等), 不需要手动修改配置。
+
+
+#### 更新配置方式:
+
+每个流水线脚本中都定义了 `properties`, 会配置流水线的 `参数化构建 是否并行构建 触发方式` 等配置。每次Jenkinsfile执行时, 都会按照properties重新设置流水线配置。
+
+**因此不要在jenkins页面手动修改流水线配置。会在下次执行时被覆盖。需要通过Jenkinsfile中的 properties 配置流水线**
+
+- 参考[流水线语法片段生成器](https://jenkins.oerv.ac.cn/pipeline-syntax/), 示例`properties`, 生成相关配置代码
+- 在`Jenkinsfile`中修改 `properties` 并提交代码
+- 执行一次空的构建 (所有参数为空, 或进配置页将参数化构建关闭,执行无参数构建)
+- 执行后, 新的 `properties` 将生效，下次构建将用最新的参数化构建和配置
+
+```groovy
+// example: rvck-webhook 流水线配置
+properties([
+    disableConcurrentBuilds(), // 不允许并发构建
+    parameters([ ... ]), // 参数化构建
+    pipelineTriggers([ GenericTrigger(...) ]) // 配置 webhook 触发器，接收webhook请求
+])
+```
+
+### jenkins job
+
+#### rvck-webhook
+
+- 接收webhook请求, 解析参数, 触发后续流水线
+  - 解析 `PR` webhook, 直接触发构建
+  - 识别并解析 `ISSUE`、 `ISSUE|PR comments`中的 `/check` 指令
+- 重置所有标签为`waiting`状态
+
+
+##### 流水线通过远程webhook触发, `Build with Parameters` 方式只用于更新token
+
+- 流水线参数`WEBHOOK_TOKEN`, 在初始化流水线时，会用时间戳作为初始默认值。
+- 参数值用于配置webhook触发插件: `GenericTrigger`, `token = ${WEBHOOK_TOKEN}`
+- github 可通过webhook `http://JENKINS_URL/generic-webhook-trigger/invoke?token=${WEBHOOK_TOKEN}`, 触发当前流水线
+- 更改token：
+  - 点击构建, 参数`WEBHOOK_TOKEN`中输入新token
+  - build之后，`GenericTrigger`插件和`WEBHOOK_TOKEN`默认值，都会改为新token
+
+##### /check 参数解析
 
 指令模板：`/check [key=value ...]`
 
@@ -84,90 +166,64 @@ PR/issue -> webhook -> jenkins job -> 分析 issue:/check sg2042 commitid , PR�
 /check fetch=d370d4b6b1a340176d56ecf48459fcc7e899df1f lava_template=lava-job-template/qemu/qemu.yaml testcase_url=lava-testcases/performance-test/fio/fio.yaml
 ```
 
-##### rvck/rvck-lava-trigger
-* 获取 kernel-build 传递的变量
+#### check-patch
 
-|变量名|作用|
-|---|---|
-|kernel_download_url|内核下载链接|
-|rootfs_download_url|rootfs下载链接|
-|REPO|指定所属仓库, 用于gh ... -R "$REPO"|
-|ISSUE_ID|需要评论的issue pr id|
-|testcase_url|需要执行的用例yaml 文件路径 |
-|testcase|ltp测试时，指定测试套|
-|lava_template|lava模板文件路径|
+- 只有 `PR|PR 评论` 会执行本流水线
+- 获取`PR`目标分支和源分支, `git format-patch` 生成 patch
+- 调用`scripts/checkpatch.pl`检查patch
+- 触发 `gh_action`, `构建结果`展示到`PR|ISSUE`评论区 
+
+#### kunit-test
+
+- 拉取`PR`分支或`ISSUE`中`fetch=commit_sha`变量指定的commit节点
+- 执行 `tools/testing/kunit/kunit.py`
+- 触发 `gh_action`, `构建结果`展示到`PR|ISSUE`评论区
+
+#### rvck-kernel-build
+
+- 拉取`PR`分支或`ISSUE`中`fetch=commit_sha`变量指定的commit节点
+- 执行内核构建
+- 构建成功后发布内核至web服务器，可供下载
+- 触发 `gh_action`, `构建结果`展示到`PR|ISSUE`评论区
+- 触发 `rvck-lava-trigger`
+
+#### rvck-lava-trigger
+
 * 检查**testcase_url**、**lava_template**文件是否存在
 * 对**lava_template**文件里的变量进行替换
-* 触发**lava**测试后，等待并返回**lava**结果至**gh_actions**
+* 触发**lava**测试
+* 等待返回**lava**结果
+* 触发 `gh_action`, `构建结果`展示到`PR|ISSUE`评论区
 
-### webhook设置
-|webhook events|
+#### gh_actions
+
+- 流水线负责执行 `gh` 相关命令
+  - 添加标签
+  - 删除标签
+  - 增加评论
+- 其余流水线在开始和结束时更新标签和将结果展示到评论区, 通过触发调用本流水线实现
+
+## github 项目配置
+
+### webhook 设置
+
+- 配置webhook链接: `http://JENKINS_URL/generic-webhook-trigger/invoke?token=${WEBHOOK_TOKEN}`
+  - WEBHOOK_TOKEN: `rvck-webhook` 中约定的token
+- webhook events:
+  - Issue comments
+  - Issues
+  - Pull requests
+
+### labels 设置
+
+参考 [通用配置 src/config.groovy](src/config.groovy) 中需要用到的`labels`，配置好issue和pr的labels类型。
+
+## 服务/工具
+
+|服务/工具|
 |---|
-|Issue comments|
-|Issues|
-|Pull requests|
-
-### Jenkins
-#### Jenkins plugin
-|Jenkins plugin|
-|---|
-|https://plugins.jenkins.io/generic-webhook-trigger|
-|https://plugins.jenkins.io/rebuild|
-
-#### Jenkins agent
-|架构|获取地址| 
-|---|---|
-|x86|hub.oepkgs.net/oerv-ci/jenkins-agent-lavacli-gh:latest|
-|riscv64|hub.oepkgs.net/oerv-ci/jenkins-sshagent:latest|
-
-#### 注意事项
-> Docker Compose v1切换到Docker Compose v2 ,需使用 docker compose 启动：
-        https://docs.docker.com/compose/install/linux/#install-the-plugin-manually
-
-## git fetch与 git am patch 区别
-
-`git fetch pull/12/head` 和使用 GitHub 提供的 PR 补丁链接（例如 `https://github.com/{owner}/{repo}/pull/{pr_number}.patch`）来应用 PR 提交，虽然最终都可以让你将 PR 的更改合并到你的分支，但它们的工作方式是不同的，具体区别如下：
-
-### 1. **`git fetch pull/12/head` 的效果**
-
-- **拉取 PR 分支**：当你使用 `git fetch pull/12/head` 时，Git 会从 GitHub 拉取指定 PR 的提交到本地的一个新分支（通常会创建一个本地分支，例如 `pull/12/head`）。
-- **与目标分支合并**：你可以选择将这个 PR 分支合并到目标分支（例如 `base`），或者查看这个 PR 的提交差异。
-- **保留提交历史**：这将保留 PR 分支的提交历史，使得你能够看到每个提交以及它们的变更。如果你选择合并这些提交，它们将以合并提交的形式进入目标分支。
-  
-#### 示例：
-```bash
-git fetch origin pull/12/head:pr-branch
-git checkout base
-git merge pr-branch
-```
-
-这种方法适用于你希望保留 PR 分支的提交历史，并且希望从远程仓库获取 PR 数据。
-
-### 2. **通过 `.patch` 链接应用 PR 补丁**
-
-- **直接应用补丁**：当你使用 `.patch` 文件时，Git 会将 PR 的提交作为补丁（patch）文件应用到目标分支。补丁文件是通过 `git format-patch` 生成的，其中包含所有更改的文件和提交信息。你可以使用 `git am` 将这些补丁文件应用到目标分支。
-- **不保留提交历史**：这种方法不会保留 PR 分支的提交历史。所有 PR 的提交会被压缩成一个或多个补丁文件，然后直接应用到目标分支。补丁中的提交不会作为单独的 Git 提交存在，而是作为一个新的提交或一系列新提交加入到目标分支。
-- **适用于对代码做修改而不关注提交历史的情况**：如果你不关心 PR 提交的具体历史，只希望将 PR 的修改应用到你的分支中，这种方法更简洁。
-
-#### 示例：
-```bash
-curl -L https://github.com/octocat/Hello-World/pull/12.patch -o pr-12.patch
-git am pr-12.patch
-```
-
-### 3. **两者的主要区别**
-
-| 特性                             | `git fetch pull/12/head`                                   | `.patch` 文件（`git am`）                           |
-|----------------------------------|-----------------------------------------------------------|----------------------------------------------------|
-| **拉取方式**                     | 拉取整个 PR 分支并在本地创建一个对应的分支。                 | 拉取并应用补丁文件，通常不会创建新的分支。           |
-| **提交历史**                     | 保留完整的提交历史，包括每个提交和提交信息。               | 不保留 PR 的提交历史，提交通常作为一个新的提交被添加到目标分支。 |
-| **适用场景**                     | 适用于需要保留 PR 提交历史或想要拉取整个 PR 分支内容的情况。 | 适用于只关心合并 PR 代码内容而不需要保留历史记录的情况。 |
-| **合并方式**                     | 使用 `git merge` 合并 PR 分支。                           | 使用 `git am` 将补丁文件应用到目标分支。              |
-| **冲突处理**                     | 与普通的 Git 合并一样，可能会有合并冲突。                   | 需要手动解决冲突，`git am` 会在冲突时暂停。            |
-
-### 总结
-
-- 如果你希望 **保留 PR 的完整提交历史** 或 **合并整个 PR 分支**，使用 `git fetch pull/12/head` 会更合适。
-- 如果你只关心 **将 PR 的更改作为补丁应用到你的分支**，并且不需要保留完整的提交历史，使用 `.patch` 文件和 `git am` 更加简洁。
-
-两者的效果确实可以达到类似的目的，但取决于你对提交历史的需求以及如何合并这些更改。
+|[Jenkins](https://www.jenkins.io/doc/)|
+|[Kernelci](https://github.com/kernelci/dashboard)|
+|[Lava](https://docs.lavasoftware.org/lava/index.html)|
+|[gh](https://github.com/cli/cli#installation)|
+|[lavacli](https://build.tarsier-infra.isrc.ac.cn/package/show/home:Suyun/lavacli)|
