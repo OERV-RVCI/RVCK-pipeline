@@ -1,0 +1,36 @@
+name: PR and Issue Handler
+
+on:
+  workflow_call:
+    outputs:
+      FETCH_REF:
+       description: '需要拉取的代码分支或commit_sha'
+       value: ${{ jobs.parse-request.outputs.FETCH_REF }}
+
+jobs:
+  parse-request:
+    runs-on: ubuntu-latest
+    outputs:
+      FETCH_REF: ${{ steps.parse_args.outputs.FETCH_REF }}
+    env:
+      x_github_event: ${{ github.event_name }}
+      payload: ${{ toJson(github.event) }}
+    steps:        
+      - name: show-info
+        run: |
+          echo "event_type: ${x_github_event}"
+          echo "webhook_event: $payload"
+
+      - name: Checkout RVCK-pipeline
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.WORKFLOW_REPO }}
+          ref: ${{ env.WORKFLOW_REF }}
+          path: 'rvck-pipeline'
+
+      - name: parse_args
+        id: parse_args
+        run: |
+            python3 rvck-pipeline/rvck-webhook/run.py
+            [ -f FETCH_REF ] || exit 1
+            echo "FETCH_REF=$(cat FETCH_REF)" >> $GITHUB_OUTPUT

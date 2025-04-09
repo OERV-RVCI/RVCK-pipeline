@@ -1,0 +1,47 @@
+name: kernel build
+
+on:
+  workflow_call:
+    inputs:
+      FETCH_REF:
+       description: '需要拉取的代码分支或commit_sha'
+       required: true
+       type: string
+    outputs:
+      kernel_download_url:
+        description: "kernel download url"
+        value: ${{ jobs.build-kernel.outputs.kernel_download_url }}
+
+jobs:
+  build-kernel:
+    runs-on: ubuntu-latest
+    outputs:
+      kernel_download_url: ${{ steps.output.outputs.kernel_download_url }}
+    steps:        
+      - name: Checkout RVCK-pipeline
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.WORKFLOW_REPO }}
+          ref: ${{ env.WORKFLOW_REF }}
+          path: 'rvck-pipeline'
+
+      - name: fetch kernel code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.FETCH_REF }}
+          path: 'kernel'
+
+      - name: build-kernel
+        run: |
+            cd kernel
+            echo REPO="${{ github.repository }}" bash ../rvck-pipeline/rvck-kernel-build/run.sh
+      
+      - name: output
+        id: output
+        run: |
+          if [ ! -f kernel_download_url ]; then
+            echo "kernel_download_url not found"
+            exit 1
+          fi
+          echo "kernel_download_url=$(cat kernel_download_url)" >> $GITHUB_OUTPUT
+

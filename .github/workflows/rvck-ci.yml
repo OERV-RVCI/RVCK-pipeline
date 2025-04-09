@@ -1,0 +1,23 @@
+name: PR and Issue Handler
+
+on:
+  pull_request:
+    types: [opened, reopened]
+  issues:
+    types: [opened, reopened]
+  issue_comment:
+    types: [created]
+
+env:
+  WORKFLOW_REPO: OERV-RVCI/RVCK-pipeline
+  WORKFLOW_REF: develop
+
+jobs:
+  parse-request:
+    uses: OERV-RVCI/RVCK-pipeline/.github/workflows/webhook.yml@develop
+
+  kernel-build:
+    needs: parse-request
+    uses: OERV-RVCI/RVCK-pipeline/.github/workflows/kernel-build.yml@develop
+    with:
+      FETCH_REF: ${{ needs.parse-request.outputs.FETCH_REF }}
