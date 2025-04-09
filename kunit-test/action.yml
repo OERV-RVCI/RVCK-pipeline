@@ -1,0 +1,27 @@
+runs:
+  using: "composite"
+  steps:
+    - name: before
+      shell: bash
+      env:
+        REMOVE_LABEL: "kunit-test_waiting,kunit-test_checking,kunit-test_done"
+        ADD_LABEL: kunit-test_checking
+      run: bash gh_actions/run.sh
+
+
+    - shell: bash
+      run: |
+        rm -rf kernel || true
+        mkdir -p kernel
+        (cd kernel && GIT_FETCH_DEPTH=1 bash ../src/git-fetch-in-dir.sh "$FETCH_REF")
+        (cd kernel && bash ../kunit-test/run.sh)
+    
+    - name: after
+      shell: bash
+      env:
+        REMOVE_LABEL: "kunit-test_waiting,kunit-test_checking,kunit-test_done"
+        ADD_LABEL: kunit-test_done
+      if: ${{ always() }}
+      run: bash gh_actions/run.sh
+
+        

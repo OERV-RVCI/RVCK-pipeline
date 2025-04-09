@@ -1,0 +1,36 @@
+
+runs:
+  using: "composite"
+  steps:
+    - name: before
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
+        ADD_LABEL: lava_checking
+      run: bash gh_actions/run.sh
+
+    - name: Checkout LAVA
+      shell: bash
+      run: |
+        rm -rf lavaci || true
+        git clone -b main --depth=1 ${{ inputs.testcase_repo}} lavaci
+        (cd lavaci && bash ../rvck-lava-trigger/run.sh)
+    
+    - name: after
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
+        ADD_LABEL: lava_check_done
+      if: ${{ success() }}
+      run: bash gh_actions/run.sh
+
+    - name: after-fail
+      if: ${{ failure() }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
+        ADD_LABEL: lava_check_fail
+      run: bash gh_actions/run.sh

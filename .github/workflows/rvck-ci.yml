@@ -1,0 +1,102 @@
+name: RVCK CI
+
+on:
+  workflow_call:
+    inputs:
+      WORKFLOW_REF:
+        required: false
+        type: string
+        default: 'main'
+
+env:
+  WORKFLOW_REF: ${{ vars.WORKFLOW_REF || inputs.WORKFLOW_REF }}
+
+jobs:
+  parse-request:
+    runs-on: 'action-runner-9950x-196.2'
+    outputs:
+      FETCH_REF: ${{ steps.parse-request.outputs.FETCH_REF }}
+      SRC_REF: ${{ steps.parse-request.outputs.SRC_REF }}
+      ISSUE_ID: ${{ steps.parse-request.outputs.ISSUE_ID }}
+      NEED_RUN_JOB: ${{ steps.parse-request.outputs.NEED_RUN_JOB }}
+      testcase_repo: ${{ steps.parse-request.outputs.testcase_repo }}
+      lava_template: ${{ steps.parse-request.outputs.lava_template }}
+      testcase_url: ${{ steps.parse-request.outputs.testcase_url }}
+      REPO: ${{ steps.parse-request.outputs.REPO }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: 'OERV-RVCI/RVCK-pipeline'
+          ref: ${{ env.WORKFLOW_REF }}
+      - id: parse-request
+        uses: ./rvck-webhook
+      # - id: check-client
+      #   uses: ./work-img
+      #   with:
+      #     image: debian-client
+
+  kunit-test:
+    needs: [parse-request]
+    if: ${{ contains(needs.parse-request.outputs.NEED_RUN_JOB, 'kunit-test') }}
+    runs-on:
+      group: '9950x'
+    container: rvck/rvck-client:develop
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: 'OERV-RVCI/RVCK-pipeline'
+          ref: ${{ env.WORKFLOW_REF }}
+      - uses: ./kunit-test
+        env:
+          FETCH_REF: ${{ needs.parse-request.outputs.FETCH_REF }}
+          REPO: ${{ needs.parse-request.outputs.REPO }}
+          ISSUE_ID: ${{ needs.parse-request.outputs.ISSUE_ID }}
+
+  check-patch:
+    needs: [parse-request]
+    if: ${{ contains(needs.parse-request.outputs.NEED_RUN_JOB, 'check-patch') && needs.parse-request.outputs.SRC_REF }}
+    runs-on:
+      group: '9950x'
+    container: rvck/rvck-client:develop
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: 'OERV-RVCI/RVCK-pipeline'
+          ref: ${{ env.WORKFLOW_REF }}
+      - uses: ./check-patch
+        env:
+          FETCH_REF: ${{ needs.parse-request.outputs.FETCH_REF }}
+          REPO: ${{ needs.parse-request.outputs.REPO }}
+          ISSUE_ID: ${{ needs.parse-request.outputs.ISSUE_ID }}
+          SRC_REF: ${{ needs.parse-request.outputs.SRC_REF }}
+
+  lava-trigger:
+    needs: [parse-request]
+    if: ${{ contains(needs.parse-request.outputs.NEED_RUN_JOB, 'lava-trigger') }}
+    runs-on: 'action-runner-9950x-196.2'
+    container: 
+      image: hub.oepkgs.net/oerv-ci/jenkins-agent-lavacli-gh:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: 'OERV-RVCI/RVCK-pipeline'
+          ref: ${{ env.WORKFLOW_REF }}
+      
+      - uses: ./rvck-kernel-build
+        id: build-kernel
+        env:
+          FETCH_REF: ${{ needs.parse-request.outputs.FETCH_REF }}
+          REPO: ${{ needs.parse-request.outputs.REPO }}
+          ISSUE_ID: ${{ needs.parse-request.outputs.ISSUE_ID }}
+      
+      - uses: ./rvck-lava-trigger
+        if: ${{ steps.build-kernel.outputs.kernel_download_url }}
+        env:
+          FETCH_REF: ${{ needs.parse-request.outputs.FETCH_REF }}
+          REPO: ${{ needs.parse-request.outputs.REPO }}
+          ISSUE_ID: ${{ needs.parse-request.outputs.ISSUE_ID }}
+          kernel_download_url: ${{ steps.build-kernel.outputs.kernel_download_url }}
+          testcase_repo: ${{ needs.parse-request.outputs.testcase_repo }}
+          lava_template: ${{ needs.parse-request.outputs.lava_template }}
+          testcase_url: ${{ needs.parse-request.outputs.testcase_url }}
+          

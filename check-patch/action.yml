@@ -1,0 +1,25 @@
+
+runs:
+  using: "composite"
+  steps:
+    - name: before
+      shell: bash
+      env:
+        REMOVE_LABLE: "check-patch_waiting,check-patch_checking,check-patch_done"
+        ADD_LABEL: check-patch_checking
+      run: bash gh_actions/run.sh
+
+    - shell: bash
+      run: |
+        rm -rf work || true
+        mkdir -p work
+        (cd work && bash ../src/git-fetch-in-dir.sh "${{ inputs.FETCH_REF }}" "${{ inputs.SRC_REF }}")
+        (cd work && bash ../check-aptch/check-aptch.sh)
+
+    - name: after
+      shell: bash
+      env:
+        REMOVE_LABLE: "check-patch_waiting,check-patch_checking,check-patch_done"
+        ADD_LABEL: check-patch_done
+      if: ${{ always() }}
+      run: bash gh_actions/run.sh

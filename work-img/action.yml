@@ -1,0 +1,17 @@
+inputs:
+  tag:
+    description: 'image tag'
+    required: true
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: image
+      shell: bash
+      run: |
+        if sudo docker inspect --type=image ${{ inputs.tag }} >/dev/null 2>&1; then
+            exit 0
+        fi
+        sudo docker build --no-cache -t ${{ inputs.tag }} work-img
+        sudo docker images

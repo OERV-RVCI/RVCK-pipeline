@@ -1,0 +1,64 @@
+inputs:
+  x_github_event:
+    description: 'GitHub event type'
+    required: false
+    default: ${{ github.event_name }}
+  payload:
+    description: 'GitHub webhook payload'
+    required: false
+    default: ${{ toJson(github.event) }}
+
+outputs:
+  REPO:
+    description: 'kernel repo'
+    value: ${{ steps.parse-request.outputs.REPO }}
+  FETCH_REF:
+    description: '需要拉取的代码分支或commit_sha'
+    value: ${{ steps.parse-request.outputs.FETCH_REF }}
+  SRC_REF:
+    description: 'pr请求, base分支'
+    value: ${{ steps.parse-request.outputs.SRC_REF }}
+  ISSUE_ID:
+    description: 'pr|issue请求, issue id'
+    value: ${{ steps.parse-request.outputs.ISSUE_ID }}
+  NEED_RUN_JOB:
+    description: '需要执行的job'
+    value: ${{ steps.parse-request.outputs.NEED_RUN_JOB || 'kunit-test,check-patch,lava-trigger' }}
+  testcase_repo:
+    description: lava 仓库地址
+    value: ${{ steps.parse-request.outputs.testcase_repo || 'https://github.com/RVCK-Project/lavaci.git' }}
+  lava_template:
+    description: lava测试模板
+    value: ${{ steps.parse-request.outputs.lava_template || 'lava-job-template/qemu/qemu-ltp.yaml' }}
+  testcase_url:
+    description: lava 需要执行的用例yaml 文件路径
+    value: ${{ steps.parse-request.outputs.testcase_url || 'lava-testcases/common-test/ltp/ltp.yaml' }}
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: show-info
+      shell: bash
+      run: |
+        echo "event_type: ${{ inputs.x_github_event }}"
+        echo "webhook_event: ${{ inputs.payload }}"
+    
+    - name: parse-request
+      id: parse-request
+      shell: bash
+      env:
+        x_github_event: ${{ inputs.x_github_event }}
+        payload: ${{ inputs.payload }}
+      run: |
+        python3 rvck-webhook/run.py
+        echo "REPO=$(cat REPO)" >> $GITHUB_OUTPUT
+        echo "FETCH_REF=$(cat FETCH_REF)" >> $GITHUB_OUTPUT
+        echo "SRC_REF=$(cat SRC_REF)" >> $GITHUB_OUTPUT
+        echo "ISSUE_ID=$(cat ISSUE_ID)" >> $GITHUB_OUTPUT
+        echo "NEED_RUN_JOB=$(cat job)" >> $GITHUB_OUTPUT
+        echo "testcase_repo=$(cat testcase_repo)" >> $GITHUB_OUTPUT
+        echo "lava_template=$(cat lava_template)" >> $GITHUB_OUTPUT
+        echo "testcase_url=$(cat testcase_url)" >> $GITHUB_OUTPUT
+        
+

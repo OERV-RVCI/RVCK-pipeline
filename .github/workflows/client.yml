@@ -1,0 +1,37 @@
+name: deploy cli
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploynode:
+        required: true
+        type: string
+        description: need deploy node
+      dockerrepo:
+        required: true
+        type: string
+        description: docker repo
+      dockerbranch:
+        required: true
+        type: string
+        description: branch
+      dockertag:
+        required: true
+        type: string
+      multiarch:
+        required: true
+        type: boolean
+
+jobs:
+  deploy-docker:
+    runs-on: ${{ inputs }}
+    steps:
+      - name: checkout docker repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.dockerrepo }}
+          ref: ${{ inputs.dockerbranch }}
+      - name: build docker
+        run: |
+          docker build -t ${{ inputs.dockertag }} .
+        

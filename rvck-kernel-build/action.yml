@@ -1,0 +1,49 @@
+outputs:
+  kernel_download_url:
+    description: "kernel download url"
+    value: ${{ steps.build-kernel.outputs.kernel_download_url }}
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: before-build
+      shell: bash
+      env:
+        REMOVE_LABEL: "kernel_waiting,kernel_building,kernel_build_failed,kernel_build_succeed"
+        ADD_LABEL: kernel_building
+      run: bash gh_actions/run.sh
+
+    - name: build-kernel
+      id: build-kernel
+      shell: bash
+      run: |
+        rm -rf kernel || true
+        mkdir -p kernel
+        (cd kernel && GIT_FETCH_DEPTH=1 bash ../src/git-fetch-in-dir.sh "$FETCH_REF")
+        (cd kernel && bash ../rvck-kernel-build/run.sh)
+
+        if [ ! -f kernel_download_url ]; then
+          echo "kernel_download_url not found"
+          exit 1
+        fi
+        echo "kernel_download_url=$(cat kernel_download_url)" >> $GITHUB_OUTPUT
+    
+    - name: build-succeed
+      shell: bash
+      env:
+        REMOVE_LABEL: "kernel_waiting,kernel_building,kernel_build_failed,kernel_build_succeed"
+        ADD_LABEL: kernel_build_succeed
+        COMMENT_CONTENT: Kernel build succeed!
+      if: ${{ success() }}
+      run: bash gh_actions/run.sh
+
+    - name: build-failed
+      shell: bash
+      env:
+        REMOVE_LABEL: "kernel_waiting,kernel_building,kernel_build_failed,kernel_build_succeed"
+        ADD_LABEL: kernel_build_failed
+        COMMENT_CONTENT: Kernel build failed!
+      if: ${{ failure() }}
+      run: bash gh_actions/run.sh
+
