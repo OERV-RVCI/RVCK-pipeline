@@ -1,0 +1,23 @@
+inputs:
+  FETCH_REF:
+    description: '需要拉取的代码分支或commit_sha'
+    required: false
+    default: ${{ github.ref }}
+  REPO:
+    description: 'kernel repo'
+    required: false
+    default: ${{ github.repositoryUrl	}}
+
+
+runs:
+  using: "composite"
+  steps:        
+    - uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository }}
+        ref: ${{ inputs.FETCH_REF }}
+        path: 'kernel'
+
+    - run: (cd kernel && bash ../kunit-test/run.sh)
+      shell: bash
+        

@@ -1,0 +1,53 @@
+name: RVCK CI
+
+on:
+  workflow_call:
+
+jobs:
+  kernel-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout RVCK-pipeline
+        uses: actions/checkout@v4
+        with:
+          repository: 'OERV-RVCI/RVCK-pipeline'
+          ref: ${{ vars.WORKFLOW_REF || 'main' }}
+
+      - uses: ./rvck-kernel-build
+        
+  
+  kunit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout RVCK-pipeline
+        uses: actions/checkout@v4
+        with:
+          repository: 'OERV-RVCI/RVCK-pipeline'
+          ref: ${{ vars.WORKFLOW_REF || 'main' }}
+      
+      - uses: ./kunit-test
+
+  check-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout RVCK-pipeline
+        uses: actions/checkout@v4
+        with:
+          repository: 'OERV-RVCI/RVCK-pipeline'
+          ref: ${{ vars.WORKFLOW_REF || 'main' }}
+
+      - uses: ./check-patch
+        if: ${{ github.event_name == 'pull_request' }}
+
+  rvck-lava-trigger:
+    needs: [kernel-build]
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout RVCK-pipeline
+        uses: actions/checkout@v4
+        with:
+          repository: 'OERV-RVCI/RVCK-pipeline'
+          ref: ${{ vars.WORKFLOW_REF || 'main' }}
+
+      - uses: ./rvck-lava-trigger

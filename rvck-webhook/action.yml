@@ -1,0 +1,22 @@
+outputs:
+  FETCH_REF:
+    description: '需要拉取的代码分支或commit_sha'
+    value: ${{ steps.parse-request.outputs.FETCH_REF }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: show-info
+      shell: bash
+      run: |
+        echo "event_type: ${x_github_event}"
+        echo "webhook_event: ${payload}"
+    
+    - name: parse_args
+      id: parse_args
+      shell: bash
+      run: |
+        python3 rvck-webhook/run.py
+        [ -f FETCH_REF ] || exit 1
+        echo "FETCH_REF=$(cat FETCH_REF)" >> $GITHUB_OUTPUT
+

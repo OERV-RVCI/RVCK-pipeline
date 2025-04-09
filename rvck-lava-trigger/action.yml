@@ -1,0 +1,51 @@
+inputs:
+  testcase_repo:
+    description: 'lava 仓库'
+    required: false
+    default: 'https://github.com/RVCK-Project/lavaci.git'
+  testcase_ref:
+    description: 'lava 仓库分支'
+    required: false
+    default: 'main'
+  lava_template:
+    description: 'lava 测试模板'
+    required: false
+    default: 'lava-job-template/qemu/qemu-ltp.yaml'
+  testcase_url:
+    description: '需要执行的用例yaml 文件路径'
+    required: false
+    default: 'lava-testcases/common-test/ltp/ltp.yaml'
+  kernel_download_url:
+    description: 'kernel 下载地址'
+    required: true
+  rootfs_download_url:
+    description: 'rootfs 下载地址'
+    required: false
+    default: 'https://mirror.iscas.ac.cn/openeuler-sig-riscv/openEuler-RISC-V/RVCK/openEuler24.03-LTS-SP1/openeuler-rootfs.img'
+  REPO:
+    description: 'kernel repo'
+    required: false
+    default: ${{ github.repositoryUrl	}}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.testcase_repo }}
+        ref: ${{ inputs.testcase_ref }}
+        path: 'lavaci'
+    
+    - name: Checkout LAVA
+      shell: bash
+      env:
+        REPO: ${{ inputs.REPO }}
+        rootfs_download_url: ${{ inputs.rootfs_download_url }}
+        kernel_download_url: ${{ inputs.kernel_download_url }}
+        lava_template: ${{ inputs.lava_template }}
+        testcase_url: ${{ inputs.testcase_url }}
+        testcase_repo: ${{ inputs.testcase_repo }}
+      run: |
+        cd lavaci
+        bash ../rvck-lava-trigger/run.sh
+
