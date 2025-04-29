@@ -60,6 +60,6 @@ lava_result=$(lavacli_admim jobs show ${lava_jobid} | yq .health)
 if [ ${lava_result} = "Complete" ];then
 	echo "Lava check done! result url: ${lava_result_url}" > COMMENT_CONTENT
 else
-	echo "Lava check fail! result url: ${lava_result_url}" > COMMENT_CONTENT
+	echo "Lava check fail! log: ${BUILD_URL}consoleFull, result url: ${lava_result_url}" > COMMENT_CONTENT
 	exit 1
 fi
