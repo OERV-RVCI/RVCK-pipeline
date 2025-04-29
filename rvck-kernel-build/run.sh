@@ -6,7 +6,7 @@ set -x
 repo_name="$(echo "${REPO##h*/}" | awk -F'.' '{print $1}')"
 kernel_result_dir="${repo_name}_pr_${ISSUE_ID}"
 download_server=10.213.6.54
-rootfs_download_url='https://mirror.iscas.ac.cn/openeuler-sig-riscv/openEuler-RISC-V/RVCK/openEuler24.03-LTS-SP1/openeuler-rootfs.img'
+rootfs_download_url='https://repo.tarsier-infra.isrc.ac.cn/openEuler-RISC-V/RVCK/openEuler24.03-LTS-SP1/openeuler-rootfs.img'
 kernel_download_url="http://${download_server}/kernel-build-results/${kernel_result_dir}/Image"
 
 
