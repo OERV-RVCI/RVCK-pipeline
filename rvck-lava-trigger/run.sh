@@ -9,12 +9,17 @@ testcase_name=$(echo "${testcase_url}" | awk -F'/' '{print $2}')
 testitem_name=${repo_name}_${testcase_name}_${device_type}
 ssh_port=$(od -An -N2 -i /dev/urandom | awk -v min=10000 -v max=20000 '{print min + ($1 % (max - min + 1))}')
 lava_server=lava.oerv.ac.cn
+lavacli_max_retry=5
+lavacli_retry_delay=30 
 
 lavacli_admim(){
     command=$1
     option=$2
     if [ ${option} = "show" ];then
     	option=${option}" --yaml"
+    fi
+    if [ ${option} = "wait" ];then
+    	option=${option}" --polling 30"
     fi
     jobid=$3
     lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ ${command} ${option} ${jobid}
@@ -51,10 +56,22 @@ else
     done <<< "$testcase_params"
 fi
 
-lava_jobid=$(lavacli_admim jobs submit "${lava_template}")
-lavacli_admim jobs wait ${lava_jobid}
+lava_jobid=$(lavacli_admim jobs submit ${lava_template})
+
+for _i in $(seq 1 ${lavacli_max_retry}); do
+    echo " lavacli jobs wait try ${_i} ..."
+    lavacli_admim jobs wait ${lava_jobid} && break
+    if [ ${_i} -lt ${lavacli_max_retry} ]; then
+        echo "wait ${lavacli_retry_delay} second then retry.."
+        sleep ${lavacli_retry_delay}
+    else
+        echo "reach retry maximum number. lavacli jobs wait error!"
+        exit 1
+    fi
+done
+
 sleep 5
-lava_result_url=https://${lava_server}/scheduler/job/${lava_jobid}
+lava_result_url=https://${lava_server}/results/${lava_jobid}/0_${testitem_name}
 lava_result=$(lavacli_admim jobs show ${lava_jobid} | yq .health)
 
 if [ ${lava_result} = "Complete" ];then
