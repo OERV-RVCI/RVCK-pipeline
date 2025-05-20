@@ -80,10 +80,10 @@ def issue_comment(payload: dict):
 
 def pull_request(payload: dict):
     # pr 创建
-    if payload["action"] != "opened":
+    if payload["action"] not in ["opened", "synchronize"]:
         return
     
-    print("from pr opened")
+    print(f"from pr {payload['action']}")
 
     res = parse_comment(str(payload["pull_request"]["body"]))
     if res is None:
