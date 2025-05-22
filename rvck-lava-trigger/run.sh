@@ -15,10 +15,9 @@ lavacli_retry_delay=30
 lavacli_admim(){
     command=$1
     option=$2
-    if [ ${option} = "show" ];then
+    if [ "${option}" = "show" ];then
     	option=${option}" --yaml"
-    fi
-    if [ ${option} = "wait" ];then
+    elif [ ${option} = "wait" ];then
     	option=${option}" --polling 30"
     fi
     jobid=$3
