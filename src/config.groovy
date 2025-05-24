@@ -19,6 +19,7 @@ all_params_desc = [
 
 // 参数默认值
 params_defaultvalue = [
+    "rootfs_download_url": "https://repo.tarsier-infra.isrc.ac.cn/openEuler-RISC-V/RVCK/openEuler24.03-LTS-SP1/openeuler-rootfs.img",
     "testcase_repo": 'https://github.com/RVCK-Project/lavaci.git',
     "lava_template": "lava-job-template/qemu/qemu-ltp.yaml",
     "testcase_url": "lava-testcases/common-test/ltp/ltp.yaml",
