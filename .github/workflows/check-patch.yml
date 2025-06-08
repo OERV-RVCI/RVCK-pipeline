@@ -1,0 +1,77 @@
+on:
+  workflow_call:
+    inputs:
+      WORKFLOW_REPO:
+        required: true
+        type: string
+        description: 工作流脚本仓库
+
+      WORKFLOW_REF:
+        required: true
+        type: string
+        description: 工作流脚本分支
+        
+      kernel_src_repo:
+        type: string
+        required: true
+        description: '内核源码仓库'
+      fetch_ref:
+        type: string
+        required: true
+        description: 'pr 合入分支或sha值'
+      src_ref:
+        type: string
+        required: true
+        description: 'pr base分支或sha值'
+      issue_id:
+        type: string
+        required: false
+
+jobs:
+  check-patch:
+    runs-on: 'action-runner-9950x-196.2'
+    container:
+      image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
+    permissions:
+      issues: write
+      pull-requests: write
+    env:
+      REMOVE_LABEL: "check-patch_waiting,check-patch_checking,check-patch_done"
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ISSUE_ID: ${{ inputs.issue_id }}
+      REPO: ${{ inputs.kernel_src_repo }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.WORKFLOW_REPO }}
+          ref: ${{ inputs.WORKFLOW_REF }}
+      
+      - name: checkout kernel-src
+        run: |
+            rm -rf kernel-src || true
+            mkdir kernel-src
+            (cd kernel-src && bash ../src/git-fetch-in-dir.sh "${{ inputs.fetch_ref }}" "${{ inputs.src_ref }}")
+      
+      - name: before
+        env:
+          ADD_LABEL: check-patch_checking
+          COMMENT_CONTENT: start check patch
+        run: bash gh_actions/run.sh || true
+
+      - name: check patch
+        continue-on-error: true
+        env:
+          FETCH_REF: ${{ inputs.fetch_ref }}
+          SRC_REF: ${{ inputs.src_ref }}
+        run: |
+          (cd "kernel-src" && ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- bash ../check-patch/check-patch.sh)
+          cat kernel-src/check-patch-result
+  
+      - name: after
+        env:
+          ADD_LABEL: check-patch_done
+        run: |
+          COMMENT_CONTENT="check patch done. log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" bash gh_actions/run.sh || true
+
+
+    

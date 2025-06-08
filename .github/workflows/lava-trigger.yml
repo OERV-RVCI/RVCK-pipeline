@@ -1,0 +1,116 @@
+name: lava-trigger
+
+on:
+  workflow_call:
+    inputs:
+      WORKFLOW_REPO:
+        required: true
+        type: string
+        description: 工作流脚本仓库
+
+      WORKFLOW_REF:
+        required: true
+        type: string
+        description: 工作流脚本分支
+        
+
+      REPO:
+        required: false
+        type: string
+      ISSUE_ID:
+        required: false
+        type: string
+      kernel_download_url:
+        description: '内核下载链接'
+        type: string
+        required: false
+      rootfs_download_url:
+        description: 'rootfs下载链接'
+        required: false
+        type: string
+        default: "https://repo.tarsier-infra.isrc.ac.cn/openEuler-RISC-V/RVCK/openEuler24.03-LTS-SP1/openeuler-rootfs.img"
+      testcase_repo:
+        description: 'lava 仓库地址'
+        required: false
+        type: string
+        default: https://github.com/RVCK-Project/lavaci.git
+      lava_template:
+        description: 'lava测试模板'
+        required: false
+        type: string
+        default: "lava-job-template/qemu/qemu-ltp.yaml"
+
+      testcase_url:
+        description: '需要执行的用例yaml 文件路径'
+        required: false
+        type: string
+        default: "lava-testcases/common-test/ltp/ltp.yaml"
+
+      testcase_params:
+        description: '测试用例参数,[key=value ...]'
+        type: string
+        required: false
+    
+    secrets:
+      lava_token:
+        required: true
+
+jobs:
+  lava-trigger:
+    runs-on: 'ubuntu-latest'
+    container:
+      image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ inputs.REPO }}
+      ISSUE_ID: ${{ inputs.ISSUE_ID }}
+      kernel_download_url: ${{ inputs.kernel_download_url }}
+      rootfs_download_url: ${{ inputs.rootfs_download_url }}
+      testcase_repo: ${{ inputs.testcase_repo }}
+      lava_template: ${{ inputs.lava_template }}
+      testcase_url: ${{ inputs.testcase_url }}
+      testcase_params: ${{ inputs.testcase_params }}
+    permissions:
+      issues: write
+      pull-requests: write
+
+    steps:      
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.WORKFLOW_REPO }}
+          ref: ${{ inputs.WORKFLOW_REF }}
+      
+      - name: checkout lavaci
+        run: |
+          rm -rf lavaci || true
+          git clone -b main --depth=1 "$testcase_repo" lavaci
+        
+      - name: before
+        env:
+          REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
+          ADD_LABEL: lava_checking
+          COMMENT_CONTENT: start lava check
+        run: bash gh_actions/run.sh || true
+
+      - name: run lava check
+        shell: bash
+        env:
+          lava_admin_token: ${{ secrets.lava_token }}
+        run: |
+          (cd lavaci && bash ../rvck-lava-trigger/run.sh)
+      
+      - name: after
+        if: ${{ success() }}
+        env:
+          REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
+          ADD_LABEL: lava_check_done
+        shell: bash
+        run: COMMENT_CONTENT=$(cat lavaci/COMMENT_CONTENT) bash gh_actions/run.sh || true
+      
+      - name: after-fail
+        if: ${{ failure() }}
+        env:
+          REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
+          ADD_LABEL: lava_check_fail
+        shell: bash
+        run: COMMENT_CONTENT=$(cat lavaci/COMMENT_CONTENT) bash gh_actions/run.sh || true

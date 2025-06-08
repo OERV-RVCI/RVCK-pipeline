@@ -2,7 +2,7 @@
 set -e
 set -x
 
-repo_name=$(echo ${REPO##h*/} | awk -F'.' '{print $1}')
+repo_name="$(echo "${REPO%.git}" | awk -F'/' '{print $(NF-1)"_"$NF}')"
 qemu_job_name=${repo_name}_pr_${ISSUE_ID}
 device_type=$(yq .device_type "${lava_template}")
 testcase_name=$(echo "${testcase_url}" | awk -F'/' '{print $2}')

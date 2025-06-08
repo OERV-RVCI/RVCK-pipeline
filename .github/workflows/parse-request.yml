@@ -1,0 +1,103 @@
+name: parse-request
+
+on:
+  workflow_call:
+    inputs:
+      WORKFLOW_REPO:
+        required: true
+        type: string
+        description: 工作流脚本仓库
+
+      WORKFLOW_REF:
+        required: true
+        type: string
+        description: 工作流脚本分支
+        
+      x_github_event:
+        type: string
+        description: 'GitHub event type'
+        required: false
+        default: ${{ github.event_name }}
+      payload:
+        type: string
+        description: 'GitHub webhook payload'
+        required: false
+        default: ${{ toJson(github.event) }}
+    
+    outputs: 
+      REPO:
+        description: 'kernel repo'
+        value: ${{ jobs.parse-request.outputs.REPO }}
+      FETCH_REF:
+        description: '需要拉取的代码分支或commit_sha'
+        value: ${{ jobs.parse-request.outputs.FETCH_REF }}
+      SRC_REF:
+        description: 'pr请求, base分支'
+        value: ${{ jobs.parse-request.outputs.SRC_REF }}
+      ISSUE_ID:
+        description: 'pr|issue请求, issue id'
+        value: ${{ jobs.parse-request.outputs.ISSUE_ID }}
+      NEED_RUN_JOB:
+        description: '需要执行的job'
+        value: ${{ jobs.parse-request.outputs.NEED_RUN_JOB }}
+      testcase_repo:
+        description: lava 仓库地址
+        value: ${{ jobs.parse-request.outputs.testcase_repo }}
+      lava_template:
+        description: lava测试模板
+        value: ${{ jobs.parse-request.outputs.lava_template }}
+      testcase_url:
+        description: lava 需要执行的用例yaml 文件路径
+        value: ${{ jobs.parse-request.outputs.testcase_url }}
+
+   
+jobs:
+  parse-request:
+    runs-on: 'ubuntu-latest'
+    outputs:
+      REPO: ${{ steps.parse-request.outputs.REPO }}
+      FETCH_REF: ${{ steps.parse-request.outputs.FETCH_REF }}
+      SRC_REF: ${{ steps.parse-request.outputs.SRC_REF }}
+      ISSUE_ID: ${{ steps.parse-request.outputs.ISSUE_ID }}
+      NEED_RUN_JOB: ${{ steps.parse-request.outputs.NEED_RUN_JOB }}
+      testcase_repo: ${{ steps.parse-request.outputs.testcase_repo }}
+      lava_template: ${{ steps.parse-request.outputs.lava_template }}
+      testcase_url: ${{ steps.parse-request.outputs.testcase_url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.WORKFLOW_REPO }}
+          ref: ${{ inputs.WORKFLOW_REF }}
+    
+      - name: show-info
+        run: |
+          echo "event_type: ${{ inputs.x_github_event }}"
+          echo "webhook_event: ${{ inputs.payload }}"
+      
+      - id: parse-request
+        env:
+          x_github_event: ${{ inputs.x_github_event }}
+          payload: ${{ inputs.payload }}
+        run: |
+          python3 rvck-webhook/run.py
+          echo "REPO=$(cat REPO)" >> $GITHUB_OUTPUT
+          echo "FETCH_REF=$(cat FETCH_REF)" >> $GITHUB_OUTPUT
+          echo "SRC_REF=$(cat SRC_REF)" >> $GITHUB_OUTPUT
+          echo "ISSUE_ID=$(cat ISSUE_ID)" >> $GITHUB_OUTPUT
+          echo "NEED_RUN_JOB=$(cat job || echo 'kunit-test,kernel-build,check-patch,lava-trigger')" >> $GITHUB_OUTPUT
+          echo "testcase_repo=$(cat testcase_repo || echo 'https://github.com/RVCK-Project/lavaci.git')" >> $GITHUB_OUTPUT
+          echo "lava_template=$(cat lava_template || echo 'lava-job-template/qemu/qemu-ltp.yaml')" >> $GITHUB_OUTPUT
+          echo "testcase_url=$(cat testcase_url || echo 'lava-testcases/common-test/ltp/ltp.yaml')" >> $GITHUB_OUTPUT
+
+          echo "REPO=$(cat REPO)" >> $GITHUB_ENV
+          echo "FETCH_REF=$(cat FETCH_REF)" >> $GITHUB_ENV
+          echo "SRC_REF=$(cat SRC_REF)" >> $GITHUB_ENV
+          echo "ISSUE_ID=$(cat ISSUE_ID)" >> $GITHUB_ENV
+          echo "NEED_RUN_JOB=$(cat job || echo 'kunit-test,kernel-build,check-patch,lava-trigger')" >> $GITHUB_ENV
+          echo "testcase_repo=$(cat testcase_repo || echo 'https://github.com/RVCK-Project/lavaci.git')" >> $GITHUB_ENV
+          echo "lava_template=$(cat lava_template || echo 'lava-job-template/qemu/qemu-ltp.yaml')" >> $GITHUB_ENV
+          echo "testcase_url=$(cat testcase_url || echo 'lava-testcases/common-test/ltp/ltp.yaml')" >> $GITHUB_ENV
+          
+

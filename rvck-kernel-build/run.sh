@@ -3,28 +3,13 @@ set -e
 set -x
 
 
-repo_name="$(echo "${REPO##h*/}" | awk -F'.' '{print $1}')"
+repo_name="$(echo "${REPO%.git}" | awk -F'/' '{print $(NF-1)"_"$NF}')"
 kernel_result_dir="${repo_name}_pr_${ISSUE_ID}"
 download_server=10.213.6.54
 
 kernel_download_url="http://${download_server}/kernel-build-results/${kernel_result_dir}/Image"
 
-
-## build kernel
-
-make distclean
-make openeuler_defconfig
-make Image -j$(nproc)
-make modules -j$(nproc)
-make dtbs -j$(nproc)
-
-make INSTALL_MOD_PATH="$kernel_result_dir" modules_install -j$(nproc)
-mkdir -p "$kernel_result_dir/dtb/thead"
-cp vmlinux "$kernel_result_dir"
-cp arch/riscv/boot/Image "$kernel_result_dir"
-install -m 644 $(find arch/riscv/boot/dts/ -name "*.dtb") "$kernel_result_dir"/dtb
-mv $(find arch/riscv/boot/dts/ -name "th1520*.dtb") "$kernel_result_dir"/dtb/thead
-
+kernel_result_dir="$kernel_result_dir" bash "$(dirname "$0")/kernel-build.sh"
 
 ## publish kernel
 if [ -f "${kernel_result_dir}/Image" ];then
