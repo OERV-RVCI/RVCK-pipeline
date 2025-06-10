@@ -91,15 +91,16 @@ jobs:
           
       
       - name: push kernel
+        shell: bash
         run: |
           if [ -f "${kernel_result_dir}/Image" ]; then
             echo "${{ secrets.sshkey_content }}" > "kernel-src/sshkey"
             chmod 600 "kernel-src/sshkey"
-              for((i=0; i<10; i++)); do
-                if rsync -avz --delete -e 'ssh -i sshkey -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes' "${kernel_result_dir}" root@${download_server}:"${download_server_dir}"; then
-                  break
-                fi
-              done
+            for((i=0; i<10; i++)); do
+              if rsync -avz --delete -e 'ssh -i sshkey -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes' "${kernel_result_dir}" root@${download_server}:"${download_server_dir}"; then
+                break
+              fi
+            done
           else
             echo "Kernel not found!"
             exit 1

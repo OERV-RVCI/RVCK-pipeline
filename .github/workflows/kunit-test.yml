@@ -72,7 +72,7 @@ jobs:
 
       - name: after
         env:
-          ADD_LABEL: kunit-test_checking
+          ADD_LABEL: kunit-test_done
         run: |
           COMMENT_CONTENT="kunit test done. log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" bash gh_actions/run.sh || true
 
