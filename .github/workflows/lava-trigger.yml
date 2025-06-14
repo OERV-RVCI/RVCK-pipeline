@@ -70,9 +70,6 @@ jobs:
       lava_template: ${{ inputs.lava_template }}
       testcase_url: ${{ inputs.testcase_url }}
       testcase_params: ${{ inputs.testcase_params }}
-    permissions:
-      issues: write
-      pull-requests: write
 
     steps:      
       - uses: actions/checkout@v4
@@ -85,12 +82,12 @@ jobs:
           rm -rf lavaci || true
           git clone -b main --depth=1 "$testcase_repo" lavaci
         
-      - name: before
-        env:
-          REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
-          ADD_LABEL: lava_checking
-          COMMENT_CONTENT: start lava check
-        run: bash gh_actions/run.sh || true
+      # - name: before
+      #   env:
+      #     REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
+      #     ADD_LABEL: lava_checking
+      #     COMMENT_CONTENT: start lava check
+      #   run: bash gh_actions/run.sh || true
 
       - name: run lava check
         shell: bash
@@ -99,18 +96,18 @@ jobs:
         run: |
           (cd lavaci && bash ../rvck-lava-trigger/run.sh)
       
-      - name: after
-        if: ${{ success() }}
-        env:
-          REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
-          ADD_LABEL: lava_check_done
-        shell: bash
-        run: COMMENT_CONTENT=$(cat lavaci/COMMENT_CONTENT) bash gh_actions/run.sh || true
+      # - name: after
+      #   if: ${{ success() }}
+      #   env:
+      #     REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
+      #     ADD_LABEL: lava_check_done
+      #   shell: bash
+      #   run: COMMENT_CONTENT=$(cat lavaci/COMMENT_CONTENT) bash gh_actions/run.sh || true
       
-      - name: after-fail
-        if: ${{ failure() }}
-        env:
-          REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
-          ADD_LABEL: lava_check_fail
-        shell: bash
-        run: COMMENT_CONTENT=$(cat lavaci/COMMENT_CONTENT) bash gh_actions/run.sh || true
+      # - name: after-fail
+      #   if: ${{ failure() }}
+      #   env:
+      #     REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
+      #     ADD_LABEL: lava_check_fail
+      #   shell: bash
+      #   run: COMMENT_CONTENT=$(cat lavaci/COMMENT_CONTENT) bash gh_actions/run.sh || true

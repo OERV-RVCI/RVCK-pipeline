@@ -5,21 +5,15 @@ on:
 
 jobs:       
   parse-request:
-    permissions:
-      issues: write
-      pull-requests: write
     uses: ./.github/workflows/parse-request.yml
+    secrets: inherit
     with:
       WORKFLOW_REPO: OERV-RVCI/RVCK-pipeline
       WORKFLOW_REF: actions
   
   kunit-test:
     needs: [parse-request]
-    permissions:
-      issues: write
-      pull-requests: write
     uses: ./.github/workflows/kunit-test.yml
-    secrets: inherit
     with:
       WORKFLOW_REPO: OERV-RVCI/RVCK-pipeline
       WORKFLOW_REF: actions
@@ -30,11 +24,6 @@ jobs:
   kernel-build:
     needs: [parse-request]
     uses: ./.github/workflows/kernel-build.yml
-    permissions:
-      issues: write
-      pull-requests: write
-    secrets:
-      sshkey_content: ${{ secrets.KERNEL_DOWNLOAD_SERVER_SSHKEY }}
     with:
       WORKFLOW_REPO: OERV-RVCI/RVCK-pipeline
       WORKFLOW_REF: actions
@@ -45,9 +34,6 @@ jobs:
   lava-trigger:
     needs: [parse-request, kernel-build]
     uses: ./.github/workflows/lava-trigger.yml
-    permissions:
-      issues: write
-      pull-requests: write
     secrets: 
       lava_token: ${{ secrets.LAVA_TOKEN }}
     with:
@@ -63,9 +49,6 @@ jobs:
   check-patch:
     needs: [parse-request]
     if: ${{ needs.parse-request.outputs.SRC_REF }}
-    permissions:
-      issues: write
-      pull-requests: write
     uses: ./.github/workflows/check-patch.yml
     secrets: inherit
     with:
@@ -75,3 +58,18 @@ jobs:
       fetch_ref: ${{ needs.parse-request.outputs.FETCH_REF }}
       src_ref: ${{ needs.parse-request.outputs.SRC_REF }}
       issue_id: ${{ needs.parse-request.outputs.ISSUE_ID }}
+  
+  collect-result:
+    if: ${{ !cancelled() }}
+    needs: [parse-request, kunit-test, kernel-build, lava-trigger, check-patch]
+    uses: ./.github/workflows/collect-result.yml
+    permissions:
+      issues: write
+      pull-requests: write
+    with:
+      repo: ${{ needs.parse-request.outputs.REPO }}
+      issue_id: ${{ needs.parse-request.outputs.ISSUE_ID }}
+      kunit-test_result: ${{ needs.kunit-test.result }}
+      kernel-build_result: ${{ needs.kernel-build.result }}
+      lava-trigger_result: ${{ needs.lava-trigger.result }}
+      check-patch_result: ${{ needs.check-patch.result }}

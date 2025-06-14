@@ -32,9 +32,6 @@ jobs:
     runs-on: 'action-runner-9950x-196.2'
     container:
       image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
-    permissions:
-      issues: write
-      pull-requests: write
     env:
       REMOVE_LABEL: "check-patch_waiting,check-patch_checking,check-patch_done"
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -52,11 +49,11 @@ jobs:
             mkdir kernel-src
             (cd kernel-src && bash ../src/git-fetch-in-dir.sh "${{ inputs.fetch_ref }}" "${{ inputs.src_ref }}")
       
-      - name: before
-        env:
-          ADD_LABEL: check-patch_checking
-          COMMENT_CONTENT: start check patch
-        run: bash gh_actions/run.sh || true
+      # - name: before
+      #   env:
+      #     ADD_LABEL: check-patch_checking
+      #     COMMENT_CONTENT: start check patch
+      #   run: bash gh_actions/run.sh || true
 
       - name: check patch
         continue-on-error: true
@@ -67,11 +64,11 @@ jobs:
           (cd "kernel-src" && ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- bash ../check-patch/check-patch.sh)
           cat kernel-src/check-patch-result
   
-      - name: after
-        env:
-          ADD_LABEL: check-patch_done
-        run: |
-          COMMENT_CONTENT="check patch done. log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" bash gh_actions/run.sh || true
+      # - name: after
+      #   env:
+      #     ADD_LABEL: check-patch_done
+      #   run: |
+      #     COMMENT_CONTENT="check patch done. log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" bash gh_actions/run.sh || true
 
 
     

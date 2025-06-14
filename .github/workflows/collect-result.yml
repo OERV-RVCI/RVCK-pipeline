@@ -1,0 +1,43 @@
+name: collect result
+on:
+  workflow_call:
+    inputs: 
+      repo:
+        type: string
+        required: false
+      issue_id:
+        type: string
+        required: false
+      
+      kunit-test_result:
+        type: string
+        required: true
+      kernel-build_result:
+        type: string
+        required: true
+      lava-trigger_result:
+        type: string
+        required: true
+      check-patch_result:
+        type: string
+        required: true
+
+jobs:
+  collect-result:
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: show result
+        run: |
+          cat > $GITHUB_STEP_SUMMARY << EEE
+          # RVCK result
+
+          > log: []($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
+
+          | check | result |
+          | :-: | :-: |
+          |kunit-test| ${{ inputs.kunit-test_result }} |
+          |kernel-build| ${{ inputs.kernel-build_result }} |
+          |lava-trigger| ${{ inputs.lava-trigger_result }} |
+          |check-patch| ${{ inputs.check-patch_result }} |
+          EEE
+          

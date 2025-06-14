@@ -34,9 +34,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ISSUE_ID: ${{ inputs.issue_id }}
       REPO: ${{ inputs.kernel_src_repo }}
-    permissions:
-      issues: write
-      pull-requests: write
+
     steps:
       - name: install pkg
         run: |
@@ -56,24 +54,23 @@ jobs:
             mkdir kernel-src
             (cd kernel-src && bash ../src/git-fetch-in-dir.sh "${{ inputs.fetch_ref }}")
       
-      - name: before
-        env:
-          ADD_LABEL: kunit-test_checking
-          COMMENT_CONTENT: "start kunit test"
-        run: bash gh_actions/run.sh || true
+      # - name: before
+      #   env:
+      #     ADD_LABEL: kunit-test_checking
+      #     COMMENT_CONTENT: "start kunit test"
+      #   run: bash gh_actions/run.sh || true
 
       - name: run kunit test
-        continue-on-error: true
         run: |
           (
           cd kernel-src
           ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- bash ../kunit-test/kunit-test.sh
           )
 
-      - name: after
-        env:
-          ADD_LABEL: kunit-test_done
-        run: |
-          COMMENT_CONTENT="kunit test done. log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" bash gh_actions/run.sh || true
+      # - name: after
+      #   env:
+      #     ADD_LABEL: kunit-test_done
+      #   run: |
+      #     COMMENT_CONTENT="kunit test done. log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" bash gh_actions/run.sh || true
 
           

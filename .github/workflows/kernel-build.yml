@@ -37,10 +37,10 @@ on:
       kernel_download_url:
         value: ${{ jobs.kernel-build.outputs.kernel_download_url }}
 
-    secrets:
-      sshkey_content: 
-        required: true
-        description: '上传内核所需ssh私钥'
+    # secrets:
+    #   sshkey_content: 
+    #     required: true
+    #     description: '上传内核所需ssh私钥'
 
 jobs:
   kernel-build:
@@ -48,7 +48,7 @@ jobs:
     container:
       image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
     outputs:
-      kernel_download_url: ${{ steps.kernel-build.outputs.kernel_download_url }}
+      kernel_download_url: ${{ steps.upload-kernel.outputs.artifact-url }}
     env:
       REMOVE_LABEL: "kernel_waiting,kernel_building,kernel_build_failed,kernel_build_succeed"
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -56,9 +56,7 @@ jobs:
       REPO: ${{ inputs.kernel_src_repo }}
       download_server: ${{ inputs.download_server }}
       download_server_dir: ${{ inputs.download_server_dir }}
-    permissions:
-      issues: write
-      pull-requests: write
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -73,54 +71,72 @@ jobs:
             mkdir kernel-src
             (cd kernel-src && bash ../src/git-fetch-in-dir.sh "${{ inputs.fetch_ref }}")
       
-      - name: before
-        env:
-          ADD_LABEL: kernel_building
-          COMMENT_CONTENT: start kernel build
-        run: bash gh_actions/run.sh || true
+      # - name: before
+      #   env:
+      #     ADD_LABEL: kernel_building
+      #     COMMENT_CONTENT: start kernel build
+      #   run: bash gh_actions/run.sh || true
+
       - name: init env
+        id: init-env
         run: |
-          echo repo_name="$(echo "${REPO%.git}" | awk -F'/' '{print $(NF-1)"_"$NF}')" >> $GITHUB_ENV
-          echo kernel_result_dir="${repo_name}_pr_${ISSUE_ID}" >> $GITHUB_ENV
-          echo kernel_download_url="http://${download_server}/kernel-build-results/${kernel_result_dir}/Image" >> $GITHUB_ENV
+          repo_name="$(echo "${REPO%.git}" | awk -F'/' '{print $(NF-1)"_"$NF}')"
+          kernel_result_dir="${repo_name}_pr_${ISSUE_ID}"
+          echo kernel_download_url="http://${download_server}/kernel-build-results/${kernel_result_dir}/Image" >> $GITHUB_OUTPUT
 
       - name: run kernel build
-        id: kernel-build
+        env:
+          kernel_result_dir: ${{ steps.init-env.outputs.kernel_result_dir }}
         run: |
           (cd "kernel-src" && kernel_result_dir=$kernel_result_dir ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- bash "../rvck-kernel-build/kernel-build.sh")
-          
       
-      - name: push kernel
-        shell: bash
-        run: |
-          if [ -f "${kernel_result_dir}/Image" ]; then
-            echo "${{ secrets.sshkey_content }}" > "kernel-src/sshkey"
-            chmod 600 "kernel-src/sshkey"
-            for((i=0; i<10; i++)); do
-              if rsync -avz --delete -e 'ssh -i sshkey -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes' "${kernel_result_dir}" root@${download_server}:"${download_server_dir}"; then
-                break
-              fi
-            done
-          else
-            echo "Kernel not found!"
-            exit 1
-          fi
+      - name: upload kernel
+        id: upload-kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.init-env.outputs.kernel_result_dir }}-Image
+          if-no-files-found: error
+          path: kernel-src/${{ steps.init-env.outputs.kernel_result_dir }}/Image
+      
+      - name: upload kernel dir
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.init-env.outputs.kernel_result_dir }}-result
+          if-no-files-found: error
+          path: kernel-src/${{ steps.init-env.outputs.kernel_result_dir }}
+      
+      # - name: push kernel
+      #   shell: bash
+      #   run: |
+      #     if [ -f "${kernel_result_dir}/Image" ]; then
+      #       echo "${{ secrets.sshkey_content }}" > "kernel-src/sshkey"
+      #       chmod 600 "kernel-src/sshkey"
+      #       for((i=0; i<10; i++)); do
+      #         if rsync -avz --delete -e 'ssh -i sshkey -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes' "${kernel_result_dir}" root@${download_server}:"${download_server_dir}"; then
+      #           break
+      #         fi
+      #       done
+      #     else
+      #       echo "Kernel not found!"
+      #       exit 1
+      #     fi
 
-          echo "kernel_download_url=$(cat "kernel-src/kernel_download_url")" >> $GITHUB_OUTPUT
+      #     echo "kernel_download_url=$(cat "kernel-src/kernel_download_url")" >> $GITHUB_OUTPUT
 
 
 
-      - name: after
-        if: ${{ success() }}
-        env:
-          ADD_LABEL: 'kernel_build_succeed'
-          COMMENT_CONTENT: 'Kernel build success!'
-        run: bash gh_actions/run.sh || true
 
-      - name: after-fail
-        if: ${{ failure() }}
-        env:
-          ADD_LABEL: kernel_build_failed
-        run: |
-          COMMENT_CONTENT="Kernel build failed!, log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" bash gh_actions/run.sh || true
+      # - name: after
+      #   if: ${{ success() }}
+      #   env:
+      #     ADD_LABEL: 'kernel_build_succeed'
+      #     COMMENT_CONTENT: 'Kernel build success!'
+      #   run: bash gh_actions/run.sh || true
+
+      # - name: after-fail
+      #   if: ${{ failure() }}
+      #   env:
+      #     ADD_LABEL: kernel_build_failed
+      #   run: |
+      #     COMMENT_CONTENT="Kernel build failed!, log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" bash gh_actions/run.sh || true
         
