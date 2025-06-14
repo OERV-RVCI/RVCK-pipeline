@@ -36,6 +36,12 @@ on:
 
 jobs:
   collect-result:
+    services:
+      nginx:
+        image: nginx
+        ports:
+          - 8080:80
+
     runs-on: 'ubuntu-latest'
     steps:
       - name: show result

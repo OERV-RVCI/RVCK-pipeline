@@ -62,7 +62,7 @@ on:
 jobs:
   lava-trigger:
     outputs:
-      summary_content: ${{ steps.run-lava-check.outputs.summary_content }}
+      summary_content: ${{ steps.summary.outputs.summary_content }}
     runs-on: 'ubuntu-latest'
     container:
       image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
@@ -96,15 +96,24 @@ jobs:
       #   run: bash gh_actions/run.sh || true
 
       - name: run lava check
-        id: run-lava-check
         shell: bash
         env:
           lava_admin_token: ${{ secrets.lava_token }}
         run: |
           (cd lavaci && bash ../rvck-lava-trigger/run.sh)
-          cat lavaci/COMMENT_CONTENT > $GITHUB_STEP_SUMMARY
-          echo "summary_content=$(cat lavaci/COMMENT_CONTENT)" >> $GITHUB_OUTPUT
       
+      - name: summary
+        id: summary
+        if: ${{ !cancelled() }}
+        run: |
+          cat > $GITHUB_STEP_SUMMARY << EEE
+          ## LAVA Check
+          
+          $(cat lavaci/COMMENT_CONTENT)
+
+          EEE
+          echo "summary_content=$(cat $GITHUB_STEP_SUMMARY)" >> $GITHUB_OUTPUT
+
       # - name: after
       #   if: ${{ success() }}
       #   env:

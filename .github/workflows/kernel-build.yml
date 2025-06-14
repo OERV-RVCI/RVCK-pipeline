@@ -81,21 +81,23 @@ jobs:
         id: kernel-build
         run: |
           (cd "kernel-src" && kernel_result_dir=kernel-result ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- bash "../rvck-kernel-build/kernel-build.sh")
+          echo "suffix=$(date +%Y%m%d%H%M%S)" >> $GITHUB_OUTPUT
       
       - name: upload kernel
         id: upload-kernel
         uses: actions/upload-artifact@v4
         with:
-          name: image-${{ inputs.issue_id || '0' }}
+          name: image-${{ inputs.issue_id || '0' }}-${{ steps.kernel-build.outputs.suffix }}
           if-no-files-found: error
+          compression-level: 0 # no compression
           path: kernel-src/kernel-result/Image
       
-      - name: upload kernel dir
-        uses: actions/upload-artifact@v4
-        with:
-          name: result-${{ inputs.issue_id || '0' }}
-          if-no-files-found: error
-          path: kernel-src/kernel-result
+      # - name: upload kernel dir
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: result-${{ inputs.issue_id || '0' }}
+      #     if-no-files-found: error
+      #     path: kernel-src/kernel-result
       
       # - name: push kernel
       #   shell: bash
