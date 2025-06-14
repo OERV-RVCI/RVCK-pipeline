@@ -74,3 +74,4 @@ jobs:
       lava-trigger_result: ${{ needs.lava-trigger.result }}
       check-patch_result: ${{ needs.check-patch.result }}
       lava-trigger_info: ${{ needs.lava-trigger.outputs.summary_content }}
+      kunit-test_info: ${{ needs.kunit-test.outputs.summary_content }}

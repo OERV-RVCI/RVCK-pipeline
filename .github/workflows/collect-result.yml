@@ -36,18 +36,26 @@ on:
 
 jobs:
   collect-result:
-    services:
-      nginx:
-        image: nginx
-        ports:
-          - 8080:80
-
+    # services:
+    #   nginx:
+    #     image: nginx
+    #     ports:
+    #       - 8080:80
+  
     runs-on: 'ubuntu-latest'
+    env:
+      LAVA_TRIGGER_INFO: ${{ inputs.lava-trigger_info }}
+      CHECK_PATCH_INFO: ${{ inputs.check-patch_info }}
+      KUNIT_TEST_INFO: ${{ inputs.kunit-test_info }}
+      KERNEL_BUILD_INFO: ${{ inputs.kernel-build_info }}
+      ISSUE_ID: ${{ inputs.issue_id }}
+      REPO: ${{ inputs.repo }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: show result
         run: |
           log_dir="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          cat >> $GITHUB_STEP_SUMMARY << EEE
+          cat >> summary << EEE
           # RVCK result
 
           > log: [$log_dir]($log_dir)
@@ -58,7 +66,23 @@ jobs:
           |kernel-build| ${{ inputs.kernel-build_result }} |
           |lava-trigger| ${{ inputs.lava-trigger_result }} |
           |check-patch| ${{ inputs.check-patch_result }} |
+
           EEE
 
-          $lava-trigger_info
+          cat summary > $GITHUB_STEP_SUMMARY
+
+          cat > comment << EEE
+          $(cat summary)
+
+          $KUNIT_TEST_INFO
+
+          $CHECK_PATCH_INFO
+
+          $KERNEL_BUILD_INFO
+
+          $LAVA_TRIGGER_INFO
+          EEE
+          
+          gh issue edit "$ISSUE_ID" -b "$(cat comment)" -R "$REPO"
+
           

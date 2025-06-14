@@ -2,6 +2,9 @@ name: kunit-test
 
 on:
   workflow_call:
+    outputs:
+      summary_content:
+        value: ${{ jobs.kunit-test.outputs.summary_content }}
     inputs:
       WORKFLOW_REPO:
         required: true
@@ -27,6 +30,8 @@ on:
 
 jobs:
   kunit-test:
+    outputs:
+      summary_content: ${{ steps.run-kunit-test.outputs.sumary_content }}
     runs-on: 'ubuntu-latest'
 
     env:
@@ -61,13 +66,29 @@ jobs:
       #   run: bash gh_actions/run.sh || true
 
       - name: run kunit test
+        id: run-kunit-test
         run: |
-          (
           cd kernel-src
           make distclean
           git checkout .
-          ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- ./tools/testing/kunit/kunit.py run --arch=riscv > $GITHUB_STEP_SUMMARY
-          )
+          ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- ./tools/testing/kunit/kunit.py run --arch=riscv > kunit.log 2>&1 || true
+          result=$(grep 'Testing complete' kunit.log || echo "kunit test failed")
+          cat > summary << EEE
+          ## Kunit Test Result
+
+          $result
+          EEE
+
+          cat > $GITHUB_STEP_SUMMARY << EEE
+          $(cat summary)
+
+          ### Kunit Test Log
+          \`\`\`bash
+          $(cat kunit.log)
+          \`\`\`
+          EEE
+          echo "sumary_content=$(cat summary)" >> $GITHUB_OUTPUT
+          
 
       # - name: after
       #   env:

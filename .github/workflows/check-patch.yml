@@ -1,5 +1,9 @@
 on:
   workflow_call:
+    outputs:
+      summary_content:
+        value: ${{ jobs.check-patch.outputs.summary_content }}
+
     inputs:
       WORKFLOW_REPO:
         required: true
@@ -29,6 +33,8 @@ on:
 
 jobs:
   check-patch:
+    outputs:
+      summary_content: ${{ steps.check-patch.outputs.summary_content }}
     runs-on: 'action-runner-9950x-196.2'
     container:
       image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
@@ -56,13 +62,55 @@ jobs:
       #   run: bash gh_actions/run.sh || true
 
       - name: check patch
+        id: check-patch
         continue-on-error: true
         env:
           FETCH_REF: ${{ inputs.fetch_ref }}
           SRC_REF: ${{ inputs.src_ref }}
         run: |
-          (cd "kernel-src" && ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- bash ../check-patch/check-patch.sh)
-          cat kernel-src/check-patch-result >> $GITHUB_STEP_SUMMARY
+        
+          patch_dir=patch-$(date +%Y%m%d%H%M%S)
+          cd "kernel-src" 
+        
+          git log --oneline "${SRC_REF}".."${FETCH_REF}"
+        
+          rm -rf "$patch_dir" || true
+          mkdir -p "$patch_dir"
+          git format-patch "${SRC_REF}".."${FETCH_REF}" -o "$patch_dir"
+
+          echo "begin to check patches..."
+          set +e
+          ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- ./scripts/checkpatch.pl "$patch_dir"/*.patch --show-types \
+              --ignore CONFIG_DESCRIPTION,FILE_PATH_CHANGES,GERRIT_CHANGE_ID,GIT_COMMIT_ID,UNKNOWN_COMMIT_ID,FROM_SIGN_OFF_MISMATCH,REPEATED_WORD,COMMIT_COMMENT_SYMBOL,BLOCK_COMMENT_STYLE,AVOID_EXTERNS,AVOID_BUG > "$patch_dir/checkpatch.log"
+          total_error=$(grep -cE "ERROR" "$patch_dir/checkpatch.log")
+          total_warn=$(grep -cE "WARNING" "$patch_dir/checkpatch.log")
+          set -e
+
+          echo "check patches result: $total_error errors, $total_warn warnings." > check-patch-result
+          
+          cat > summary_conent << EEE
+          ## Check Patch Result
+
+          | | |
+          |---|---|
+          | Total Errors | $total_error |
+          | Total Warnings | $total_warn |
+
+          EEE
+          
+          cat > $GITHUB_STEP_SUMMARY << EEE
+          $(cat summary_conent)
+          
+          ### Check Patch Log
+
+          \`\`\`log
+          $(cat kernel-src/$patch_dir/checkpatch.log)
+          \`\`\`
+          EEE
+
+          echo "summary_content=$(cat summary_conent)" >> $GITHUB_OUTPUT
+          
+         
   
       # - name: after
       #   env:
