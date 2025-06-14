@@ -80,26 +80,22 @@ jobs:
       - name: run kernel build
         id: kernel-build
         run: |
-          repo_name="$(echo "${REPO%.git}" | awk -F'/' '{print $(NF-1)"_"$NF}')"
-          kernel_result_dir="${repo_name}_pr_${ISSUE_ID}"
-          kernel_download_url="http://${download_server}/kernel-build-results/${kernel_result_dir}/Image"
-          (cd "kernel-src" && kernel_result_dir=$kernel_result_dir ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- bash "../rvck-kernel-build/kernel-build.sh")
-          echo "kernel_download_url=${kernel_download_url}" >> $GITHUB_ENV
+          (cd "kernel-src" && kernel_result_dir=kernel-result ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- bash "../rvck-kernel-build/kernel-build.sh")
       
       - name: upload kernel
         id: upload-kernel
         uses: actions/upload-artifact@v4
         with:
-          name: Image-${kernel_download_url}
+          name: Image-${{ inputs.issue_id || '0' }}
           if-no-files-found: error
-          path: kernel-src/${kernel_download_url}/Image
+          path: kernel-src/kernel-result/Image
       
       - name: upload kernel dir
         uses: actions/upload-artifact@v4
         with:
-          name: ${kernel_download_url}-result
+          name: result-${{ inputs.issue_id || '0' }}
           if-no-files-found: error
-          path: kernel-src/${kernel_download_url}
+          path: kernel-src/kernel-result
       
       # - name: push kernel
       #   shell: bash
