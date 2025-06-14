@@ -32,11 +32,11 @@ on:
         type: string
         required: false
         default: '/usr/share/nginx/html/download/kernel-build-results'
-
+    
     outputs:
       kernel_download_url:
         value: ${{ jobs.kernel-build.outputs.kernel_download_url }}
-
+    
     # secrets:
     #   sshkey_content: 
     #     required: true
@@ -86,7 +86,7 @@ jobs:
         id: upload-kernel
         uses: actions/upload-artifact@v4
         with:
-          name: Image-${{ inputs.issue_id || '0' }}
+          name: image-${{ inputs.issue_id || '0' }}
           if-no-files-found: error
           path: kernel-src/kernel-result/Image
       
