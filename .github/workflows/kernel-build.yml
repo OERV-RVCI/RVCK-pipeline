@@ -79,18 +79,35 @@ jobs:
 
       - name: run kernel build
         id: kernel-build
+        env:
+          kernel_result_dir: kernel-result
         run: |
-          (cd "kernel-src" && kernel_result_dir=kernel-result ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- bash "../rvck-kernel-build/kernel-build.sh")
+          (
+          cd "kernel-src"
+          ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu-
+          make distclean
+          make openeuler_defconfig
+          make Image -j$(nproc)
+          make modules -j$(nproc)
+          make dtbs -j$(nproc)
+
+          make INSTALL_MOD_PATH="$kernel_result_dir" modules_install -j$(nproc)
+          mkdir -p "$kernel_result_dir/dtb/thead"
+          cp vmlinux "$kernel_result_dir"
+          cp arch/riscv/boot/Image "$kernel_result_dir/kernel.zip"
+          install -m 644 $(find arch/riscv/boot/dts/ -name "*.dtb") "$kernel_result_dir"/dtb
+          mv $(find arch/riscv/boot/dts/ -name "th1520*.dtb") "$kernel_result_dir"/dtb/thead
+          )
+
           echo "suffix=$(date +%Y%m%d%H%M%S)" >> $GITHUB_OUTPUT
       
       - name: upload kernel
         id: upload-kernel
         uses: actions/upload-artifact@v4
         with:
-          name: image-${{ inputs.issue_id || '0' }}-${{ steps.kernel-build.outputs.suffix }}
+          name: kernel-${{ inputs.issue_id || '0' }}-${{ steps.kernel-build.outputs.suffix }}.zip
           if-no-files-found: error
-          compression-level: 0 # no compression
-          path: kernel-src/kernel-result/Image
+          path: kernel-src/kernel-result/kernel.zip
       
       # - name: upload kernel dir
       #   uses: actions/upload-artifact@v4

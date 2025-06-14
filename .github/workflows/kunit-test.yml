@@ -64,7 +64,9 @@ jobs:
         run: |
           (
           cd kernel-src
-          ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- bash ../kunit-test/kunit-test.sh &> $GITHUB_STEP_SUMMARY
+          make distclean
+          git checkout .
+          ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- ./tools/testing/kunit/kunit.py run --arch=riscv > $GITHUB_STEP_SUMMARY
           )
 
       # - name: after

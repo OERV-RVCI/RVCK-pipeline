@@ -106,13 +106,14 @@ jobs:
         id: summary
         if: ${{ !cancelled() }}
         run: |
-          cat > $GITHUB_STEP_SUMMARY << EEE
+          cat > summary << EEE
           ## LAVA Check
           
           $(cat lavaci/COMMENT_CONTENT)
 
           EEE
-          echo "summary_content=$(cat $GITHUB_STEP_SUMMARY)" >> $GITHUB_OUTPUT
+          cat summary >> $GITHUB_STEP_SUMMARY
+          echo "summary_content=$(cat summary)" >> $GITHUB_OUTPUT
 
       # - name: after
       #   if: ${{ success() }}
