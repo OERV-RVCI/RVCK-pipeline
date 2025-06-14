@@ -73,3 +73,4 @@ jobs:
       kernel-build_result: ${{ needs.kernel-build.result }}
       lava-trigger_result: ${{ needs.lava-trigger.result }}
       check-patch_result: ${{ needs.check-patch.result }}
+      lava-trigger_info: ${{ needs.lava-trigger.outputs.summary_content }}

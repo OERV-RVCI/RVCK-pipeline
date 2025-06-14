@@ -21,6 +21,18 @@ on:
       check-patch_result:
         type: string
         required: true
+      kunit-test_info:
+        type: string
+        required: false
+      kernel-build_info:
+        type: string
+        required: false
+      lava-trigger_info:
+        type: string
+        required: false
+      check-patch_info:
+        type: string
+        required: false
 
 jobs:
   collect-result:
@@ -28,7 +40,7 @@ jobs:
     steps:
       - name: show result
         run: |
-          cat > $GITHUB_STEP_SUMMARY << EEE
+          cat >> $GITHUB_STEP_SUMMARY << EEE
           # RVCK result
 
           > log: []($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
@@ -40,4 +52,6 @@ jobs:
           |lava-trigger| ${{ inputs.lava-trigger_result }} |
           |check-patch| ${{ inputs.check-patch_result }} |
           EEE
+
+          $lava-trigger_info
           

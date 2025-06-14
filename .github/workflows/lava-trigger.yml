@@ -2,6 +2,10 @@ name: lava-trigger
 
 on:
   workflow_call:
+    outputs:
+      summary_content:
+        value: ${{ jobs.lava-trigger.outputs.summary_content }}
+
     inputs:
       WORKFLOW_REPO:
         required: true
@@ -57,6 +61,8 @@ on:
 
 jobs:
   lava-trigger:
+    outputs:
+      summary_content: ${{ steps.run-lava-check.outputs.summary_content }}
     runs-on: 'ubuntu-latest'
     container:
       image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
@@ -90,11 +96,14 @@ jobs:
       #   run: bash gh_actions/run.sh || true
 
       - name: run lava check
+        id: run-lava-check
         shell: bash
         env:
           lava_admin_token: ${{ secrets.lava_token }}
         run: |
           (cd lavaci && bash ../rvck-lava-trigger/run.sh)
+          cat lavaci/COMMENT_CONTENT > $GITHUB_STEP_SUMMARY
+          echo "summary_content=$(cat lavaci/COMMENT_CONTENT)" >> $GITHUB_OUTPUT
       
       # - name: after
       #   if: ${{ success() }}
