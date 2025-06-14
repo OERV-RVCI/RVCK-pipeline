@@ -83,6 +83,6 @@ jobs:
           $LAVA_TRIGGER_INFO
           EEE
           
-          gh issue edit "$ISSUE_ID" -b "$(cat comment)" -R "$REPO"
+          gh issue comment "$ISSUE_ID" -b "$(cat comment)" -R "$REPO"
 
           

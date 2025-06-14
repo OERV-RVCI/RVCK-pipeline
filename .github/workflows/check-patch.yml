@@ -88,7 +88,7 @@ jobs:
 
           echo "check patches result: $total_error errors, $total_warn warnings." > check-patch-result
           
-          cat > summary_conent << EEE
+          cat > summary_conent <<- EEE
           ## Check Patch Result
 
           | | |
@@ -97,8 +97,9 @@ jobs:
           | Total Warnings | $total_warn |
 
           EEE
+          echo "summary_content=$(cat summary_conent)" >> $GITHUB_OUTPUT
           
-          cat > $GITHUB_STEP_SUMMARY << EEE
+          cat > $GITHUB_STEP_SUMMARY <<- EEE
           $(cat summary_conent)
           
           ### Check Patch Log
@@ -108,7 +109,6 @@ jobs:
           \`\`\`
           EEE
 
-          echo "summary_content=$(cat summary_conent)" >> $GITHUB_OUTPUT
           
          
   

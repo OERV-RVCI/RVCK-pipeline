@@ -105,8 +105,9 @@ jobs:
       - name: summary
         id: summary
         if: ${{ !cancelled() }}
+        shell: bash
         run: |
-          cat > summary << EEE
+          cat > summary <<- EEE
           ## LAVA Check
           
           $(cat lavaci/COMMENT_CONTENT)

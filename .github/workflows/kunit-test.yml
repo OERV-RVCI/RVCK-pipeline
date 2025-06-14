@@ -67,26 +67,25 @@ jobs:
 
       - name: run kunit test
         id: run-kunit-test
+        shell: bash
         run: |
           cd kernel-src
           make distclean
           git checkout .
           ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- ./tools/testing/kunit/kunit.py run --arch=riscv > kunit.log 2>&1 || true
-          result=$(grep 'Testing complete' kunit.log || echo "kunit test failed")
+          result="$(grep 'Testing complete' kunit.log || echo "kunit test failed")"
           
           echo '## Kunit Test Result' > summary
           echo "$result" >> summary
+          echo "sumary_content=$(cat summary)" >> $GITHUB_OUTPUT
           
-          cat > $GITHUB_STEP_SUMMARY << EEE
+          cat > $GITHUB_STEP_SUMMARY <<- EEE
           $(cat summary)
 
-          ### Kunit Test Log
-          
           \`\`\`bash
           $(cat kunit.log)
           \`\`\`
           EEE
-          echo "sumary_content=$(cat summary)" >> $GITHUB_OUTPUT
           
 
       # - name: after
