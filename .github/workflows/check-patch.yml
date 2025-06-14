@@ -62,7 +62,7 @@ jobs:
           SRC_REF: ${{ inputs.src_ref }}
         run: |
           (cd "kernel-src" && ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- bash ../check-patch/check-patch.sh)
-          cat kernel-src/check-patch-result
+          cat kernel-src/check-patch-result >> $GITHUB_STEP_SUMMARY
   
       # - name: after
       #   env:
