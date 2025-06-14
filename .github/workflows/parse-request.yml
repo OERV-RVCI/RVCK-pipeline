@@ -65,6 +65,8 @@ jobs:
       testcase_url: ${{ steps.parse-request.outputs.testcase_url }}
     env:
       GH_TOKEN: ${{ github.token }}
+      x_github_event: ${{ inputs.x_github_event }}
+      payload: ${{ inputs.payload }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -73,13 +75,10 @@ jobs:
     
       - name: show-info
         run: |
-          echo "event_type: ${{ inputs.x_github_event }}"
-          echo "webhook_event: ${{ inputs.payload }}"
+          echo "event_type: $x_github_event"
+          echo "webhook_event: ${payload}"
       
       - id: parse-request
-        env:
-          x_github_event: ${{ inputs.x_github_event }}
-          payload: ${{ inputs.payload }}
         run: |
           python3 rvck-webhook/run.py
           echo "REPO=$(cat REPO)" >> $GITHUB_OUTPUT
