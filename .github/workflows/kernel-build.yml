@@ -84,7 +84,7 @@ jobs:
         run: |
           (
           cd "kernel-src"
-          ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu-
+          export ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu-
           make distclean
           make openeuler_defconfig
           make Image -j$(nproc)
