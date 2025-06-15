@@ -125,6 +125,9 @@ jobs:
           
           $result
           EEE
-          echo "summary_content=$(cat summary)" >> $GITHUB_OUTPUT
-
           cat summary > $GITHUB_STEP_SUMMARY
+          
+          echo "summary_content<<EOF" >> $GITHUB_OUTPUT
+          cat summary >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+

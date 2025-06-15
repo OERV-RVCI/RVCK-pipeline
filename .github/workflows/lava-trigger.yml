@@ -105,29 +105,19 @@ jobs:
       - name: summary
         id: summary
         if: ${{ !cancelled() }}
-        shell: bash
+        continue-on-error: true
         run: |
-          cat > summary <<- EEE
+
+          cat > summary << EEE
           ## LAVA Check
           
           $(cat lavaci/COMMENT_CONTENT)
 
           EEE
-          cat summary >> $GITHUB_STEP_SUMMARY
-          echo "summary_content=$(cat summary)" >> $GITHUB_OUTPUT
 
-      # - name: after
-      #   if: ${{ success() }}
-      #   env:
-      #     REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
-      #     ADD_LABEL: lava_check_done
-      #   shell: bash
-      #   run: COMMENT_CONTENT=$(cat lavaci/COMMENT_CONTENT) bash gh_actions/run.sh || true
-      
-      # - name: after-fail
-      #   if: ${{ failure() }}
-      #   env:
-      #     REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
-      #     ADD_LABEL: lava_check_fail
-      #   shell: bash
-      #   run: COMMENT_CONTENT=$(cat lavaci/COMMENT_CONTENT) bash gh_actions/run.sh || true
+          cat summary > $GITHUB_STEP_SUMMARY
+          
+          echo "summary_content<<EOF" >> $GITHUB_OUTPUT
+          cat summary >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
