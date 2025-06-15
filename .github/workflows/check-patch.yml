@@ -88,29 +88,27 @@ jobs:
 
           echo "check patches result: $total_error errors, $total_warn warnings." > check-patch-result
           
-          cat > summary_conent <<- EEE
-          ## Check Patch Result
+          {
+          echo '## Check Patch Result'
+          echo ''
+          echo '| | |'
+          echo '|---|---|'
+          echo "| Total Errors | $total_error |"
+          echo "| Total Warnings | $total_warn |"
 
-          | | |
-          |---|---|
-          | Total Errors | $total_error |
-          | Total Warnings | $total_warn |
-
-          EEE
-          echo "summary_content=$(cat summary_conent)" >> $GITHUB_OUTPUT
+          } > summary_content
+          echo "summary_content=$(cat summary_content)" >> $GITHUB_OUTPUT
           
-          cat > $GITHUB_STEP_SUMMARY <<- EEE
-          $(cat summary_conent)
-          
-          ### Check Patch Log
+          {
+            cat summary_content
+            echo ''
+            echo '### Check Patch Log'
+            echo ''
+            echo '```log'
+            cat kernel-src/$patch_dir/checkpatch.log
+            echo '```'
+          } > $GITHUB_STEP_SUMMARY
 
-          \`\`\`log
-          $(cat kernel-src/$patch_dir/checkpatch.log)
-          \`\`\`
-          EEE
-
-          
-         
   
       # - name: after
       #   env:

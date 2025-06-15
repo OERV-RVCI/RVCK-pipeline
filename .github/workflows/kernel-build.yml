@@ -113,15 +113,21 @@ jobs:
           path: kernel-src/kernel-result/kernel.zip
       
       - name: summary
+        if: ${{ always() }}
         id: summary
         shell: bash
         run: |
-          cat > summary << EEE
-          ## Kernel Build Result
+          {
+          echo '## Kernel Build Result'
+          echo ''
+          if [ "${{ steps.upload-kernel.outputs.artifact-url }}" != "" ]; then
+            echo "Kernel build succeed. [${{ steps.upload-kernel.outputs.artifact-url }}](${{ steps.upload-kernel.outputs.artifact-url }})"
+          else
+            echo "Kernel build failed!"
+          fi
           
-          Kernel build completed successfully. [${{ steps.upload-kernel.outputs.artifact-url }}](${{ steps.upload-kernel.outputs.artifact-url }})
-          
-          EEE
+          } > summary
+
           cat summary >> $GITHUB_STEP_SUMMARY
           echo "summary_content=$(cat summary)" >> $GITHUB_OUTPUT
 
