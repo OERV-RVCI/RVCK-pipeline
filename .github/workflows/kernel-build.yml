@@ -117,16 +117,18 @@ jobs:
         id: summary
         shell: bash
         run: |
-          {
-          echo '## Kernel Build Result'
-          echo ''
+          cat > summary <<- EEE
+          ## Kernel Build Result
+          
+          $(
           if [ "${{ steps.upload-kernel.outputs.artifact-url }}" != "" ]; then
             echo "Kernel build succeed. [${{ steps.upload-kernel.outputs.artifact-url }}](${{ steps.upload-kernel.outputs.artifact-url }})"
           else
             echo "Kernel build failed!"
           fi
-          
-          } > summary
+          )
+
+          EEE
 
           cat summary >> $GITHUB_STEP_SUMMARY
           echo "summary_content=$(cat summary)" >> $GITHUB_OUTPUT

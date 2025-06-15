@@ -74,23 +74,23 @@ jobs:
           git checkout .
           ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- ./tools/testing/kunit/kunit.py run --arch=riscv > kunit.log 2>&1 || true
           result="$(grep 'Testing complete' kunit.log || echo "kunit test failed")"
+          cat > summary <<- EEE
+          ## Kunit Test Result
           
-          {
-          echo '## Kunit Test Result'
-          echo ''
-          echo "$result" 
-          } > summary
+          $result
+          EEE
+
           echo "sumary_content=$(cat summary)" >> $GITHUB_OUTPUT
           
-          {
-            cat summary
-            echo ''
-            echo '### Kunit Test Log'
-            echo ''
-            echo '```bash'
-            cat kunit.log
-            echo '```'
-          } > $GITHUB_STEP_SUMMARY
+          cat > $GITHUB_STEP_SUMMARY <<- EEE
+          $(cat summary)
+
+          ### Kunit Test Log
+          
+          $(echo '```bash')
+          $(cat kunit.log)
+          $(echo '```')
+          EEE
           
       # - name: after
       #   env:
