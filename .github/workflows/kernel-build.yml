@@ -116,6 +116,7 @@ jobs:
         if: ${{ always() }}
         id: summary
         shell: bash
+        continue-on-error: true
         run: |
           cat > summary <<- EEE
           ## Kernel Build Result
