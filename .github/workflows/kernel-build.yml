@@ -109,7 +109,7 @@ jobs:
         id: upload-kernel
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-${{ inputs.issue_id || '0' }}-${{ steps.kernel-build.outputs.suffix }}
+          name: kernel-${{ inputs.issue_id || '0' }}-${{ steps.kernel-build.outputs.suffix }}.tar.gz
           if-no-files-found: error
           compression-level: 0
           path: kernel-src/kernel-result/kernel.tar.gz
