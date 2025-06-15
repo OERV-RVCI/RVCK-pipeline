@@ -55,7 +55,7 @@ jobs:
       - name: show result
         run: |
           log_dir="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          cat >> summary << EEE
+          cat > summary << EEE
           # RVCK result
 
           > log: [$log_dir]($log_dir)
@@ -66,23 +66,17 @@ jobs:
           |kernel-build| ${{ inputs.kernel-build_result }} |
           |lava-trigger| ${{ inputs.lava-trigger_result }} |
           |check-patch| ${{ inputs.check-patch_result }} |
-
-          EEE
-
-          cat summary > $GITHUB_STEP_SUMMARY
-
-          cat > comment << EEE
-          $(cat summary)
-
+          
           $KUNIT_TEST_INFO
-
+          
           $CHECK_PATCH_INFO
-
+          
           $KERNEL_BUILD_INFO
-
+          
           $LAVA_TRIGGER_INFO
           EEE
+          cat summary > $GITHUB_STEP_SUMMARY
           
-          gh issue comment "$ISSUE_ID" -b "$(cat comment)" -R "$REPO"
+          gh issue comment "$ISSUE_ID" -b "$(cat summary)" -R "$REPO"
 
           
