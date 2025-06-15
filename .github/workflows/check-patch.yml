@@ -106,7 +106,7 @@ jobs:
           ### Check Patch Log
           
           $(echo '```log')
-          $(cat kernel-src/$patch_dir/checkpatch.log)
+          $(cat $patch_dir/checkpatch.log)
           $(echo '```')
           EEE
           
