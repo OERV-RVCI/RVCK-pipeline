@@ -115,64 +115,16 @@ jobs:
       - name: summary
         if: ${{ always() }}
         id: summary
-        shell: bash
+        env:
+          kernel_url: ${{ steps.upload-kernel.outputs.artifact-url }}
         continue-on-error: true
         run: |
-          cat > summary <<- EEE
+          result=$(if [ "$kernel_url" != "" ]; then echo "Kernel build succeed. [$kernel_url]($kernel_url)"; else echo "Kernel build failed!"; fi)
+          cat >> summary << EEE
           ## Kernel Build Result
           
-          $(
-          if [ "${{ steps.upload-kernel.outputs.artifact-url }}" != "" ]; then
-            echo "Kernel build succeed. [${{ steps.upload-kernel.outputs.artifact-url }}](${{ steps.upload-kernel.outputs.artifact-url }})"
-          else
-            echo "Kernel build failed!"
-          fi
-          )
-
+          $result
           EEE
-
-          cat summary >> $GITHUB_STEP_SUMMARY
           echo "summary_content=$(cat summary)" >> $GITHUB_OUTPUT
 
-      # - name: upload kernel dir
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: result-${{ inputs.issue_id || '0' }}
-      #     if-no-files-found: error
-      #     path: kernel-src/kernel-result
-      
-      # - name: push kernel
-      #   shell: bash
-      #   run: |
-      #     if [ -f "${kernel_result_dir}/Image" ]; then
-      #       echo "${{ secrets.sshkey_content }}" > "kernel-src/sshkey"
-      #       chmod 600 "kernel-src/sshkey"
-      #       for((i=0; i<10; i++)); do
-      #         if rsync -avz --delete -e 'ssh -i sshkey -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes' "${kernel_result_dir}" root@${download_server}:"${download_server_dir}"; then
-      #           break
-      #         fi
-      #       done
-      #     else
-      #       echo "Kernel not found!"
-      #       exit 1
-      #     fi
-
-      #     echo "kernel_download_url=$(cat "kernel-src/kernel_download_url")" >> $GITHUB_OUTPUT
-
-
-
-
-      # - name: after
-      #   if: ${{ success() }}
-      #   env:
-      #     ADD_LABEL: 'kernel_build_succeed'
-      #     COMMENT_CONTENT: 'Kernel build success!'
-      #   run: bash gh_actions/run.sh || true
-
-      # - name: after-fail
-      #   if: ${{ failure() }}
-      #   env:
-      #     ADD_LABEL: kernel_build_failed
-      #   run: |
-      #     COMMENT_CONTENT="Kernel build failed!, log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" bash gh_actions/run.sh || true
-        
+          cat summary > $GITHUB_STEP_SUMMARY

@@ -67,14 +67,14 @@ jobs:
 
       - name: run kunit test
         id: run-kunit-test
-        shell: bash
+        continue-on-error: true
         run: |
           cd kernel-src
           make distclean
           git checkout .
           ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- ./tools/testing/kunit/kunit.py run --arch=riscv > kunit.log 2>&1 || true
           result="$(grep 'Testing complete' kunit.log || echo "kunit test failed")"
-          cat > summary <<- EEE
+          cat >> summary << EEE
           ## Kunit Test Result
           
           $result
