@@ -35,7 +35,6 @@ jobs:
     runs-on: 'ubuntu-latest'
 
     env:
-      REMOVE_LABEL: "kunit-test_waiting,kunit-test_checking,kunit-test_done"
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ISSUE_ID: ${{ inputs.issue_id }}
       REPO: ${{ inputs.kernel_src_repo }}

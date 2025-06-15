@@ -39,7 +39,6 @@ jobs:
     container:
       image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
     env:
-      REMOVE_LABEL: "check-patch_waiting,check-patch_checking,check-patch_done"
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ISSUE_ID: ${{ inputs.issue_id }}
       REPO: ${{ inputs.kernel_src_repo }}

@@ -90,7 +90,7 @@ jobs:
         
       # - name: before
       #   env:
-      #     REMOVE_LABEL: "lava_waiting,lava_checking,lava_check_done,lava_check_fail"
+      #     
       #     ADD_LABEL: lava_checking
       #     COMMENT_CONTENT: start lava check
       #   run: bash gh_actions/run.sh || true

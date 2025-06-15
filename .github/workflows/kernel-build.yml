@@ -53,7 +53,6 @@ jobs:
       kernel_download_url: ${{ steps.upload-kernel.outputs.artifact-url }}
       summary_content: ${{ steps.summary.outputs.summary_content }}
     env:
-      REMOVE_LABEL: "kernel_waiting,kernel_building,kernel_build_failed,kernel_build_succeed"
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ISSUE_ID: ${{ inputs.issue_id }}
       REPO: ${{ inputs.kernel_src_repo }}
