@@ -34,6 +34,9 @@ on:
         type: string
         required: false
 
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   collect-result:
     # services:
@@ -50,7 +53,6 @@ jobs:
       KERNEL_BUILD_INFO: ${{ inputs.kernel-build_info }}
       ISSUE_ID: ${{ inputs.issue_id }}
       REPO: ${{ inputs.repo }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: show result
         run: |
