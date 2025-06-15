@@ -96,7 +96,9 @@ jobs:
           make INSTALL_MOD_PATH="$kernel_result_dir" modules_install -j$(nproc)
           mkdir -p "$kernel_result_dir/dtb/thead"
           cp vmlinux "$kernel_result_dir"
-          cp arch/riscv/boot/Image "$kernel_result_dir/kernel.zip"
+          cp arch/riscv/boot/Image "$kernel_result_dir/Image"
+          (cd "$kernel_result_dir" && tar -czf kernel.tar Image)
+          
           install -m 644 $(find arch/riscv/boot/dts/ -name "*.dtb") "$kernel_result_dir"/dtb
           mv $(find arch/riscv/boot/dts/ -name "th1520*.dtb") "$kernel_result_dir"/dtb/thead
           )
@@ -107,9 +109,10 @@ jobs:
         id: upload-kernel
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-${{ inputs.issue_id || '0' }}-${{ steps.kernel-build.outputs.suffix }}.zip
+          name: kernel-${{ inputs.issue_id || '0' }}-${{ steps.kernel-build.outputs.suffix }}
           if-no-files-found: error
-          path: kernel-src/kernel-result/kernel.zip
+          compression-level: 0
+          path: kernel-src/kernel-result/kernel.tar
       
       - name: summary
         if: ${{ always() }}
