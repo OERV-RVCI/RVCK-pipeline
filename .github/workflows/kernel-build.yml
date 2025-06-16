@@ -96,7 +96,6 @@ jobs:
           mkdir -p "$kernel_result_dir/dtb/thead"
           cp vmlinux "$kernel_result_dir"
           cp arch/riscv/boot/Image "$kernel_result_dir/Image"
-          (cd "$kernel_result_dir" && tar -czf kernel.tar.gz Image)
           
           install -m 644 $(find arch/riscv/boot/dts/ -name "*.dtb") "$kernel_result_dir"/dtb
           mv $(find arch/riscv/boot/dts/ -name "th1520*.dtb") "$kernel_result_dir"/dtb/thead
