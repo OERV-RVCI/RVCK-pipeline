@@ -49,15 +49,16 @@ jobs:
     runs-on: 'action-runner-9950x-196.2'
     container:
       image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
+      volumes:
+        - /srv/nginx/kernel-build:/srv/nginx/kernel-build
     outputs:
-      kernel_download_url: ${{ steps.upload-kernel.outputs.artifact-url }}
+      kernel_download_url: ${{ steps.publish-kernel.outputs.kernel_download_url }}
       summary_content: ${{ steps.summary.outputs.summary_content }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ISSUE_ID: ${{ inputs.issue_id }}
       REPO: ${{ inputs.kernel_src_repo }}
-      download_server: ${{ inputs.download_server }}
-      download_server_dir: ${{ inputs.download_server_dir }}
+      kernel_result_dir: kernel-result
 
     steps:
       - uses: actions/checkout@v4
@@ -81,8 +82,6 @@ jobs:
 
       - name: run kernel build
         id: kernel-build
-        env:
-          kernel_result_dir: kernel-result
         run: |
           (
           cd "kernel-src"
@@ -105,24 +104,35 @@ jobs:
 
           echo "suffix=$(date +%Y%m%d%H%M%S)" >> $GITHUB_OUTPUT
       
-      - name: upload kernel
-        id: upload-kernel
-        uses: actions/upload-artifact@v4
-        with:
-          name: kernel-${{ inputs.issue_id || '0' }}-${{ steps.kernel-build.outputs.suffix }}.tar.gz
-          if-no-files-found: error
-          compression-level: 0
-          path: kernel-src/kernel-result/kernel.tar.gz
+      - name: publish kernel
+        id: publish-kernel
+        env:
+          runner_name: ${{ runner.name }}
+        run: |
+          kernel_dir_uniq_name="$(echo "${REPO%.git}" | awk -F'/' '{print $(NF-1)"_"$NF}')_${ISSUE_ID}"
+          target_dir="/srv/nginx/kernel-build/$kernel_dir_uniq_name"
+          if [ -d "$target_dir" ]; then
+             rm -rf "$target_dir"
+          fi
+          cp -r $kernel_result_dir "$target_dir"
+          echo "kernel_download_url='http://10.30.${runner_name##*-}/${kernel_dir_uniq_name}/Image'" >> $GITHUB_OUTPUT
       
       - name: summary
         if: ${{ always() }}
         id: summary
         env:
-          kernel_url: ${{ steps.upload-kernel.outputs.artifact-url }}
+          kernel_url: ${{ steps.publish-kernel.outputs.kernel_download_url }}
         continue-on-error: true
         run: |
-          result=$(if [ "$kernel_url" != "" ]; then echo "Kernel build succeed. [$kernel_url]($kernel_url)"; else echo "Kernel build failed!"; fi)
-          cat >> summary << EEE
+          if [ "$kernel_url" != "" ]; then
+            kernel_dir_url="${kernel_url%/*}"
+            kernel_dir_name="${kernel_dir_url##*/}"
+            result="Kernel build succeeded: [${kernel_dir_name}](${kernel_url})"
+          else
+            result="Kernel build failed."
+          fi
+
+          cat > summary << EEE
           ## Kernel Build Result
           
           $result
