@@ -115,7 +115,7 @@ jobs:
              rm -rf "$target_dir"
           fi
           cp -r "kernel-src/$kernel_result_dir" "$target_dir"
-          echo "kernel_download_url='http://10.30.${runner_name##*-}:8080/${kernel_dir_uniq_name}/Image'" >> $GITHUB_OUTPUT
+          echo "kernel_download_url=http://10.30.${runner_name##*-}:8080/${kernel_dir_uniq_name}/Image" >> $GITHUB_OUTPUT
       
       - name: summary
         if: ${{ always() }}
