@@ -21,14 +21,15 @@ jobs:
         run: |
           if [ "$event_name" = 'pull_request' ] || [ "$event_name" = 'pull_request_target' ]; then
             title="$(gh pr view ${{ github.event.pull_request.number }} --json title -q '.title')"
-            lava_template=$(echo "$title" | awk -F']-[' '{print $1}')
-            lava_template="${lava_template#[}"
-            lava_template="${lava_template%]}"
+            # title=[lava-job-template/qemu/qemu.yaml]-[lava-testcases/common-test/ltp/ltp.yaml]: xxx
+            lava_template=$(echo "$title" | awk -F'\\]-\\[' '{print $1}')
+            lava_template="${lava_template#\[}"
+            lava_template="${lava_template%\]}"
             [ -z "$lava_template" ] && exit 0
 
             lava_testcase_url=$(echo "$title" | awk -F'-' '{print $2}')
-            lava_testcase_url="${lava_testcase_url#[}"
-            lava_testcase_url="${lava_testcase_url%]}"
+            lava_testcase_url="${lava_testcase_url#\[}"
+            lava_testcase_url="${lava_testcase_url%\]}"
             [ -z "$lava_testcase_url" ] && exit 0
 
           elif [ "$event_name" = 'issues' ]; then
