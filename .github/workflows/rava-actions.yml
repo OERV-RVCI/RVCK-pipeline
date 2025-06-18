@@ -19,11 +19,9 @@ jobs:
     steps:
       - id: parse
         run: |
-          echo "workflow_ref: ${{ github.workflow_ref }}"
-
           if [ "$event_name" = 'pull_request' ] || [ "$event_name" = 'pull_request_target' ]; then
             title="$(gh pr view ${{ github.event.pull_request.number }} --json title -q '.title')"
-            lava_template=$(echo "$title" | awk -F'-' '{print $1}')
+            lava_template=$(echo "$title" | awk -F']-[' '{print $1}')
             lava_template="${lava_template#[}"
             lava_template="${lava_template%]}"
             [ -z "$lava_template" ] && exit 0
