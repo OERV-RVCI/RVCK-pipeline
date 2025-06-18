@@ -49,6 +49,13 @@ jobs:
           echo "lava_template=$lava_template" >> $GITHUB_OUTPUT
           echo "lava_testcase_url=$lava_testcase_url" >> $GITHUB_OUTPUT
 
+          cat > $GITHUB_STEP_SUMMARY << EOF
+          ## LAVA Check Request
+
+          - **LAVA Template**: $lava_template
+          - **Testcase URL**: $lava_testcase_url
+          EOF
+
   
   run-lava-check:
     needs: [parse-request]
@@ -62,7 +69,7 @@ jobs:
       REPO: ${{ github.repositoryUrl }}
       ISSUE_ID: ${{ github.event.issue.number || github.event.pull_request.number }}
       kernel_download_url: ''
-      testcase_repo: ${{ github.repositoryUrl }}
+      testcase_repo: ${{ github.repository.clone_url }}
       testcase_ref: ${{ github.ref }}
       lava_template: ${{ needs.parse-request.outputs.lava_template }}
       testcase_url: ${{ needs.parse-request.outputs.lava_testcase_url }}
