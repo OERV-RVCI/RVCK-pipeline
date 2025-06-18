@@ -53,6 +53,8 @@ jobs:
     needs: [parse-request]
     if: ${{ needs.parse-request.outputs.lava_template && needs.parse-request.outputs.lava_testcase_url }}
     uses: ./.github/workflows/lava-trigger.yml
+    secrets:
+      lava_token: ${{ secrets.lava_token }}
     with:
       WORKFLOW_REPO: OERV-RVCI/RVCK-pipeline
       WORKFLOW_REF: actions
