@@ -18,41 +18,49 @@ jobs:
     steps:
       - id: parse
         run: |
-          if [ "$event_name" = 'pull_request' ]; then
+          echo "workflow_ref: ${{ github.workflow_ref }}"
+
+          if [ "$event_name" = 'pull_request' ] || [ "$event_name" = 'pull_request_target' ]; then
             title="$(gh pr view ${{ github.event.pull_request.number }} --json title -q '.title')"
             lava_template=$(echo "$title" | awk -F'-' '{print $1}')
             lava_template="${lava_template#[}"
             lava_template="${lava_template%]}"
-            [ -z "$lava_template" ] && exit 1
-            
+            [ -z "$lava_template" ] && exit 0
+
             lava_testcase_url=$(echo "$title" | awk -F'-' '{print $2}')
             lava_testcase_url="${lava_testcase_url#[}"
             lava_testcase_url="${lava_testcase_url%]}"
-            [ -z "$lava_testcase_url" ] && exit 1
-            echo "lava_template=$lava_template" >> $GITHUB_OUTPUT
-            echo "lava_testcase_url=$lava_testcase_url" >> $GITHUB_OUTPUT
-          else
-            
+            [ -z "$lava_testcase_url" ] && exit 0
+
+          elif [ "$event_name" = 'issues' ]; then
+            true
+          elif [ "$event_name" = 'issue_comment' ]; then
+            comment_body="${{ github.event.comment.body }}"
+            if [ "$(echo "$comment_body" | awk -F'-' '{print $1}')" != '/check' ]; then
+              echo "This is not a check command, exiting."
+              exit 0
+            fi
+            lava_template=$(echo "$comment_body" | awk -F'lava_template=' '{print $2}' | awk '{print $1}')
+            lava_testcase_url=$(echo "$comment_body" | awk -F'testcase_url=' '{print $2}' | awk '{print $1}')
+          
           fi
+          
+          echo "lava_template=$lava_template" >> $GITHUB_OUTPUT
+          echo "lava_testcase_url=$lava_testcase_url" >> $GITHUB_OUTPUT
 
-  trait-pr-change-file:
-    if: ${{ github.event_name == 'pull_request' }}
-    outputs:
-      files: ${{ steps.get-files.outputs.files }}
+  
+  run-lava-check:
     runs-on: 'ubuntu-latest'
-    steps:
-      - id: get-files
-        run: |
-          files=$(gh pr diff ${{ github.event.pull_request.number }} --name-only)
-          echo "files=$files" >> $GITHUB_OUTPUT
-
-  show-files:
-    runs-on: 'ubuntu-latest'
-    needs: [trait-push-change-file, trait-pr-change-file]
-    if: ${{ always() }}
-    env:
-      files: ${{ needs.trait-push-change-file.outputs.files }}, ${{ needs.trait-pr-change-file.outputs.files }}
-    steps:
-      - run: |
-         echo $files
+    needs: [parse-request]
+    if: {{ needs.parse-request.outputs.lava_template && needs.parse-request.outputs.lava_testcase_url }}
+    uses: ./.github/workflows/lava-trigger.yml
+    with:
+      WORKFLOW_REPO: OERV-RVCI/RVCK-pipeline
+      WORKFLOW_REF: actions
+      REPO: ${{ github.repositoryUrl }}
+      ISSUE_ID: ${{ github.event.issue.number || github.event.pull_request.number }}
+      testcase_repo: ${{ github.repositoryUrl }}
+      testcase_ref: ${{ github.ref }}
+      lava_template: ${{ needs.parse-request.outputs.lava_template }}
+      testcase_url: ${{ needs.parse-request.outputs.lava_testcase_url }}
       

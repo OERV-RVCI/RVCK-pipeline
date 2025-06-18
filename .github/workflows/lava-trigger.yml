@@ -38,6 +38,11 @@ on:
         required: false
         type: string
         default: https://github.com/RVCK-Project/lavaci.git
+      testcase_ref:
+        description: 'lava 仓库分支'
+        required: false
+        type: string
+        default: "main"
       lava_template:
         description: 'lava测试模板'
         required: false
@@ -73,6 +78,7 @@ jobs:
       kernel_download_url: ${{ inputs.kernel_download_url }}
       rootfs_download_url: ${{ inputs.rootfs_download_url }}
       testcase_repo: ${{ inputs.testcase_repo }}
+      testcase_ref: ${{ inputs.testcase_ref }}
       lava_template: ${{ inputs.lava_template }}
       testcase_url: ${{ inputs.testcase_url }}
       testcase_params: ${{ inputs.testcase_params }}
@@ -86,7 +92,7 @@ jobs:
       - name: checkout lavaci
         run: |
           rm -rf lavaci || true
-          git clone -b main --depth=1 "$testcase_repo" lavaci
+          git clone -b "$testcase_ref" --depth=1 "$testcase_repo" lavaci
         
       # - name: before
       #   env:
