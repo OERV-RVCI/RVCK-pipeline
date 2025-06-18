@@ -7,19 +7,33 @@ on:
         required: true
 
 jobs:
-  trait-push-change-file:
-    if: ${{ github.event_name == 'push' }}
-    outputs:
-      files: ${{ steps.get-files.outputs.files }}
+  parse-request:
     runs-on: 'ubuntu-latest'
+    outputs:
+      lava_template: ${{ steps.parse.outputs.lava_template }}
+      lava_testcase_url: ${{ steps.parse.outputs.lava_testcase_url }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      event_name: ${{ github.event_name }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-      - id: get-files
+      - id: parse
         run: |
-          files=$(git diff --name-only HEAD^ HEAD)
-          echo "files=$files" >> $GITHUB_OUTPUT
+          if [ "$event_name" = 'pull_request' ]; then
+            title="$(gh pr view ${{ github.event.pull_request.number }} --json title -q '.title')"
+            lava_template=$(echo "$title" | awk -F'-' '{print $1}')
+            lava_template="${lava_template#[}"
+            lava_template="${lava_template%]}"
+            [ -z "$lava_template" ] && exit 1
+            
+            lava_testcase_url=$(echo "$title" | awk -F'-' '{print $2}')
+            lava_testcase_url="${lava_testcase_url#[}"
+            lava_testcase_url="${lava_testcase_url%]}"
+            [ -z "$lava_testcase_url" ] && exit 1
+            echo "lava_template=$lava_template" >> $GITHUB_OUTPUT
+            echo "lava_testcase_url=$lava_testcase_url" >> $GITHUB_OUTPUT
+          else
+            
+          fi
 
   trait-pr-change-file:
     if: ${{ github.event_name == 'pull_request' }}
