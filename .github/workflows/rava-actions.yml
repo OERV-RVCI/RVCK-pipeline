@@ -67,7 +67,7 @@ jobs:
       WORKFLOW_REF: actions
       REPO: ${{ github.repositoryUrl }}
       ISSUE_ID: ${{ github.event.issue.number || github.event.pull_request.number }}
-      kernel_download_url: ''
+      kernel_download_url: 'https://fast-mirror.isrc.ac.cn/openeuler-sig-riscv/openEuler-RISC-V/RVCK/OERV-RVCI_rvck-olk_1/Image'
       testcase_repo: ${{ github.repository.clone_url }}
       testcase_ref: ${{ github.ref }}
       lava_template: ${{ needs.parse-request.outputs.lava_template }}

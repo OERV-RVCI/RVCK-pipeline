@@ -28,6 +28,7 @@ on:
         description: '内核下载链接'
         type: string
         required: false
+        default: ""
       rootfs_download_url:
         description: 'rootfs下载链接'
         required: false
