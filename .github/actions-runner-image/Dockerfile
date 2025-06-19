@@ -15,7 +15,7 @@ RUN apt install gh lavacli gcc-riscv64-linux-gnu gcc-riscv64-unknown-elf \
 	make gcc g++ flex device-tree-compiler pahole dwarves libfuse-dev kmod  bzip2 xz-utils curl cpio bc libssl-dev libncurses-dev bison flex libelf-dev \
 	qemu-system-riscv64 \
 	python3-ply python3-git \
-	git vim bash-completion tmux sudo\
+	git vim bash-completion tmux sudo rsync \
 	-y
 
 RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq

@@ -49,14 +49,11 @@ jobs:
         with:
           repository: ${{ inputs.kernel_src_repo }}
           ref: ${{ inputs.fetch_ref }}
-          path: kernel-src
           fetch-depth: 1
       
       - name: run kernel build
         id: kernel-build
         run: |
-          (
-          cd "kernel-src"
           export ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu-
           make distclean
           make openeuler_defconfig
@@ -71,7 +68,6 @@ jobs:
           
           install -m 644 $(find arch/riscv/boot/dts/ -name "*.dtb") "$kernel_result_dir"/dtb
           mv $(find arch/riscv/boot/dts/ -name "th1520*.dtb") "$kernel_result_dir"/dtb/thead
-          )
 
       - name: publish kernel
         id: publish-kernel
@@ -88,7 +84,7 @@ jobs:
         continue-on-error: true
         with:
           name: kernel-result
-          path: kernel-src/kernel-result
+          path: kernel-result
 
       
       - name: summary
