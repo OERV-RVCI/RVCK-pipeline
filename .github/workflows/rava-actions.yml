@@ -65,11 +65,11 @@ jobs:
     with:
       WORKFLOW_REPO: OERV-RVCI/RVCK-pipeline
       WORKFLOW_REF: actions
-      REPO: ${{ github.repositoryUrl }}
+      REPO: ${{ github.repository.clone_url }}
       ISSUE_ID: ${{ github.event.issue.number || github.event.pull_request.number }}
       kernel_download_url: 'https://fast-mirror.isrc.ac.cn/openeuler-sig-riscv/openEuler-RISC-V/RVCK/OERV-RVCI_rvck-olk_1/Image'
       testcase_repo: ${{ github.repository.clone_url }}
-      testcase_ref: ${{ github.ref }}
+      testcase_ref: ${{ github.event.pull_request.head.ref }}
       lava_template: ${{ needs.parse-request.outputs.lava_template }}
       testcase_url: ${{ needs.parse-request.outputs.lava_testcase_url }}
       
