@@ -6,27 +6,15 @@ on:
       summary_content:
         value: ${{ jobs.kunit-test.outputs.summary_content }}
     inputs:
-      WORKFLOW_REPO:
-        required: true
-        type: string
-        description: 工作流脚本仓库
-
-      WORKFLOW_REF:
-        required: true
-        type: string
-        description: 工作流脚本分支
-        
       kernel_src_repo:
         type: string
         required: true
         description: '内核源码仓库'
+
       fetch_ref:
         type: string
         required: true
         description: '内核分支或sha值'
-      issue_id:
-        type: string
-        required: false
 
 jobs:
   kunit-test:
@@ -34,10 +22,6 @@ jobs:
       summary_content: ${{ steps.run-kunit-test.outputs.sumary_content }}
     runs-on: 'ubuntu-latest'
 
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      ISSUE_ID: ${{ inputs.issue_id }}
-      REPO: ${{ inputs.kernel_src_repo }}
 
     steps:
       - name: install pkg
@@ -45,30 +29,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-riscv64-linux-gnu gcc-riscv64-unknown-elf make gcc g++ flex device-tree-compiler pahole dwarves libfuse-dev kmod  bzip2 xz-utils curl cpio bc libssl-dev libncurses-dev bison flex libelf-dev qemu-system-riscv64
       
-      - uses: actions/checkout@v4
-        with:
-          repository: ${{ inputs.WORKFLOW_REPO }}
-          ref: ${{ inputs.WORKFLOW_REF }}
-      
       - name: checkout kernel-src
-        env:
-          GIT_FETCH_DEPTH: 1
-        run: |
-            rm -rf kernel-src || true
-            mkdir kernel-src
-            (cd kernel-src && bash ../src/git-fetch-in-dir.sh "${{ inputs.fetch_ref }}")
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.kernel_src_repo }}
+          ref: ${{ inputs.fetch_ref }}
+          fetch-depth: 1
       
-      # - name: before
-      #   env:
-      #     ADD_LABEL: kunit-test_checking
-      #     COMMENT_CONTENT: "start kunit test"
-      #   run: bash gh_actions/run.sh || true
-
       - name: run kunit test
         id: run-kunit-test
         continue-on-error: true
         run: |
-          cd kernel-src
           make distclean
           git checkout .
           ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- ./tools/testing/kunit/kunit.py run --arch=riscv > kunit.log 2>&1 || true
