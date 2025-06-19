@@ -3,46 +3,31 @@ name: kunit-build
 on:
   workflow_call:
     inputs:
-      WORKFLOW_REPO:
-        required: true
-        type: string
-        description: 工作流脚本仓库
-
-      WORKFLOW_REF:
-        required: true
-        type: string
-        description: 工作流脚本分支
-        
       kernel_src_repo:
         type: string
         required: true
         description: '内核源码仓库'
+      
       fetch_ref:
         type: string
         required: true
         description: '内核分支或sha值'
-      issue_id:
+      
+      upload_dir:
         type: string
-        required: false
-      download_server: 
-        type: string
-        required: false
-        default: 10.213.6.54
-      download_server_dir: 
-        type: string
-        required: false
-        default: '/usr/share/nginx/html/download/kernel-build-results'
-    
+        required: true
+        description: '上传目录'
+
     outputs:
       kernel_download_url:
         value: ${{ jobs.kernel-build.outputs.kernel_download_url }}
       summary_content:
         value: ${{ jobs.kernel-build.outputs.summary_content }}
     
-    # secrets:
-    #   sshkey_content: 
-    #     required: true
-    #     description: '上传内核所需ssh私钥'
+    secrets:
+      rync_passphrase: 
+        required: true
+        description: 'rsync上传内核所需密码'
 
 jobs:
   kernel-build:
@@ -56,30 +41,17 @@ jobs:
       summary_content: ${{ steps.summary.outputs.summary_content }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      ISSUE_ID: ${{ inputs.issue_id }}
-      REPO: ${{ inputs.kernel_src_repo }}
       kernel_result_dir: kernel-result
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: ${{ inputs.WORKFLOW_REPO }}
-          ref: ${{ inputs.WORKFLOW_REF }}
-      
       - name: checkout kernel-src
-        env:
-          GIT_FETCH_DEPTH: 1
-        run: |
-            rm -rf kernel-src || true
-            mkdir kernel-src
-            (cd kernel-src && bash ../src/git-fetch-in-dir.sh "${{ inputs.fetch_ref }}")
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.kernel_src_repo }}
+          ref: ${{ inputs.fetch_ref }}
+          path: kernel-src
+          fetch-depth: 1
       
-      # - name: before
-      #   env:
-      #     ADD_LABEL: kernel_building
-      #     COMMENT_CONTENT: start kernel build
-      #   run: bash gh_actions/run.sh || true
-
       - name: run kernel build
         id: kernel-build
         run: |
@@ -101,32 +73,35 @@ jobs:
           mv $(find arch/riscv/boot/dts/ -name "th1520*.dtb") "$kernel_result_dir"/dtb/thead
           )
 
-          echo "suffix=$(date +%Y%m%d%H%M%S)" >> $GITHUB_OUTPUT
-      
       - name: publish kernel
         id: publish-kernel
         env:
-          runner_name: ${{ runner.name }}
+          RSYNC_PASSWORD: ${{ secrets.rync_passphrase }}
         run: |
-          kernel_dir_uniq_name="$(echo "${REPO%.git}" | awk -F'/' '{print $(NF-1)"_"$NF}')_${ISSUE_ID}"
-          target_dir="/srv/nginx/kernel-build/$kernel_dir_uniq_name"
-          if [ -d "$target_dir" ]; then
-             rm -rf "$target_dir"
-          fi
-          cp -r "kernel-src/$kernel_result_dir" "$target_dir"
-          echo "kernel_download_url=http://10.30.${runner_name##*-}:8080/${kernel_dir_uniq_name}/Image" >> $GITHUB_OUTPUT
+          rsync -avn --progress --delete --include='Image' --exclude='*' "$kernel_result_dir" rvck@10.30.190.110::RVCK/${{ inputs.upload_dir }}/
+          echo "kernel_download_url=https://fast-mirror.isrc.ac.cn/openeuler-sig-riscv/openEuler-RISC-V/RVCK/${{ inputs.upload_dir }}/Image" >> $GITHUB_OUTPUT
+      
+      ## 归档内核构建结果
+      - name: archive kernel result
+        id: archive-kernel
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: kernel-result
+          path: kernel-src/kernel-result
+
       
       - name: summary
         if: ${{ always() }}
         id: summary
         env:
           kernel_url: ${{ steps.publish-kernel.outputs.kernel_download_url }}
+          archive_url: ${{ steps.archive-kernel.outputs.artifact-url }}
+          upload_dir: ${{ inputs.upload_dir }}
         continue-on-error: true
         run: |
           if [ "$kernel_url" != "" ]; then
-            kernel_dir_url="${kernel_url%/*}"
-            kernel_dir_name="${kernel_dir_url##*/}"
-            result="Kernel build succeeded: [${kernel_dir_name}](${kernel_url})"
+            result="Kernel build succeeded: [${upload_dir}/Image](${kernel_url})"
           else
             result="Kernel build failed."
           fi
@@ -135,7 +110,11 @@ jobs:
           ## Kernel Build Result
           
           $result
+
+          > Archive: [kernel-result.zip](${archive_url})
+
           EEE
+
           cat summary > $GITHUB_STEP_SUMMARY
           
           echo "summary_content<<EOF" >> $GITHUB_OUTPUT

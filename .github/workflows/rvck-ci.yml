@@ -25,11 +25,12 @@ jobs:
     needs: [parse-request]
     uses: ./.github/workflows/kernel-build.yml
     with:
-      WORKFLOW_REPO: OERV-RVCI/RVCK-pipeline
-      WORKFLOW_REF: actions
-      kernel_src_repo: ${{ needs.parse-request.outputs.REPO }}
+      kernel_src_repo: ${{ github.repository }}
       fetch_ref: ${{ needs.parse-request.outputs.FETCH_REF }}
-      issue_id: ${{ needs.parse-request.outputs.ISSUE_ID }}
+      upload_dir: "${{ github.repository }}/${{ github.event.issue.number || github.event.pull_request.number }}"
+    secrets:
+      rync_passphrase: ${{ secrets.RSYNC_PASSPHRASE }}
+
       
   lava-trigger:
     needs: [parse-request, kernel-build]
