@@ -94,7 +94,7 @@ jobs:
           echo "SRC_REF=$(cat SRC_REF)" >> $GITHUB_OUTPUT
           echo "ISSUE_ID=$(cat ISSUE_ID)" >> $GITHUB_OUTPUT
           echo "NEED_RUN_JOB=$(cat job || echo 'kunit-test,kernel-build,check-patch,lava-trigger')" >> $GITHUB_OUTPUT
-          echo "testcase_repo=$(cat testcase_repo || echo 'https://github.com/RVCK-Project/lavaci.git')" >> $GITHUB_OUTPUT
+          echo "testcase_repo=$(cat testcase_repo || echo 'RVCK-Project/lavaci')" >> $GITHUB_OUTPUT
           echo "lava_template=$(cat lava_template || echo 'lava-job-template/qemu/qemu-ltp.yaml')" >> $GITHUB_OUTPUT
           echo "testcase_url=$(cat testcase_url || echo 'lava-testcases/common-test/ltp/ltp.yaml')" >> $GITHUB_OUTPUT
           echo "qemu_job_name=${github_repo/\//-}_$(cat ISSUE_ID)" >> $GITHUB_OUTPUT
