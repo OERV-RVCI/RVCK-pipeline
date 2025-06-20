@@ -49,6 +49,8 @@ on:
       testcase_url:
         description: lava 需要执行的用例yaml 文件路径
         value: ${{ jobs.parse-request.outputs.testcase_url }}
+      qemu_job_name: 
+        value: ${{ jobs.parse-request.outputs.qemu_job_name }}
 
    
 jobs:
@@ -63,6 +65,7 @@ jobs:
       testcase_repo: ${{ steps.parse-request.outputs.testcase_repo }}
       lava_template: ${{ steps.parse-request.outputs.lava_template }}
       testcase_url: ${{ steps.parse-request.outputs.testcase_url }}
+      qemu_job_name: ${{ steps.parse-request.outputs.qemu_job_name }}
     env:
       GH_TOKEN: ${{ github.token }}
       x_github_event: ${{ inputs.x_github_event }}
@@ -74,11 +77,16 @@ jobs:
           ref: ${{ inputs.WORKFLOW_REF }}
     
       - name: show-info
+        env:
+          action_repository: github.action_repository	
         run: |
+          echo "action_repository: ${action_repository}"
           echo "event_type: $x_github_event"
           echo "webhook_event: ${payload}"
       
       - id: parse-request
+        env:
+          github_repo: ${{ github.repository	}}
         run: |
           python3 rvck-webhook/run.py
           echo "REPO=$(cat REPO)" >> $GITHUB_OUTPUT
@@ -89,6 +97,7 @@ jobs:
           echo "testcase_repo=$(cat testcase_repo || echo 'https://github.com/RVCK-Project/lavaci.git')" >> $GITHUB_OUTPUT
           echo "lava_template=$(cat lava_template || echo 'lava-job-template/qemu/qemu-ltp.yaml')" >> $GITHUB_OUTPUT
           echo "testcase_url=$(cat testcase_url || echo 'lava-testcases/common-test/ltp/ltp.yaml')" >> $GITHUB_OUTPUT
+          echo "qemu_job_name=${github_repo/\//-}_$(cat ISSUE_ID)" >> $GITHUB_OUTPUT
 
           echo "REPO=$(cat REPO)" >> $GITHUB_ENV
           echo "FETCH_REF=$(cat FETCH_REF)" >> $GITHUB_ENV
