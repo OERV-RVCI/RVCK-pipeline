@@ -69,7 +69,12 @@ jobs:
       summary_content: ${{ steps.summary.outputs.summary_content }}
     runs-on: 'ubuntu-latest'
 
-    steps:      
+    steps:
+      - name: install depends
+        run: |
+          sudo apt-get update
+          sudo apt-get install lavacli
+
       - uses: actions/checkout@v4
         with:
           repository: ${{ inputs.testcase_repo }}
@@ -126,7 +131,7 @@ jobs:
           data['actions'][2]['test']['definitions'][0]['name'] = f'{qemu_job_name.replace("/", "-")}_{testcase_url.split("/")[-1]}_{data["device_type"]}'
           open('testitem_name', 'w').write(data['actions'][2]['test']['definitions'][0]['name'])
           data['actions'][2]['test']['definitions'][0]['path'] = testcase_url
-          data['actions'][2]['test']['definitions'][0].pop('parameters')
+          data['actions'][2]['test']['definitions'][0].pop('parameters', None)
 
           with open(lava_template, 'w') as f:
               f.write(yaml.dump(data))
