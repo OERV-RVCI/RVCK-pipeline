@@ -90,6 +90,9 @@ jobs:
           testcase_repo = os.getenv("testcase_repo", "")
           assert testcase_repo, "Testcase repository is not set"
 
+          testcase_ref = os.getenv("testcase_ref", "")
+          assert testcase_ref, "Testcase ref is not set"
+
           lava_template = os.getenv("lava_template")
           assert lava_template, "Lava template is not set"
 
@@ -119,6 +122,7 @@ jobs:
           data['actions'][0]['deploy']['images']['kernel']['url'] = kernel_download_url
           data['actions'][0]['deploy']['images']['rootfs']['url'] = rootfs_download_url
           data['actions'][2]['test']['definitions'][0]['repository'] = testcase_repo
+          data['actions'][2]['test']['definitions'][0]['branch'] = testcase_ref
           data['actions'][2]['test']['definitions'][0]['name'] = f'{qemu_job_name.replace("/", "-")}_{testcase_url.split("/")[-1]}_{data["device_type"]}'
           open('testitem_name', 'w').write(data['actions'][2]['test']['definitions'][0]['name'])
           data['actions'][2]['test']['definitions'][0]['path'] = testcase_url

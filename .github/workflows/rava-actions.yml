@@ -12,6 +12,7 @@ jobs:
     outputs:
       lava_template: ${{ steps.parse.outputs.lava_template }}
       lava_testcase_url: ${{ steps.parse.outputs.lava_testcase_url }}
+      qemu_job_name: ${{ steps.parse.outputs.qemu_job_name }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
@@ -44,15 +45,18 @@ jobs:
             lava_testcase_url=$(echo "$comment_body" | awk -F'testcase_url=' '{print $2}' | awk '{print $1}')
           
           fi
-          
+          qemu_job_name="$(t="${lava_template##*/}"; echo "${t%.*}")_$(t="${lava_testcase_url##*/}"; echo "${t%.*}")"
+
           echo "lava_template=$lava_template" >> $GITHUB_OUTPUT
           echo "lava_testcase_url=$lava_testcase_url" >> $GITHUB_OUTPUT
-
+          echo "qemu_job_name=$qemu_job_name" >> $GITHUB_OUTPUT
           cat > $GITHUB_STEP_SUMMARY << EOF
           ## LAVA Check Request
-
+          
+          - **qemu job name**: $qemu_job_name
           - **LAVA Template**: $lava_template
           - **Testcase URL**: $lava_testcase_url
+
           EOF
 
   
@@ -63,13 +67,10 @@ jobs:
     secrets:
       lava_token: ${{ secrets.lava_token }}
     with:
-      WORKFLOW_REPO: OERV-RVCI/RVCK-pipeline
-      WORKFLOW_REF: actions
-      REPO: ${{ github.repository.clone_url }}
-      ISSUE_ID: ${{ github.event.issue.number || github.event.pull_request.number }}
       kernel_download_url: 'https://fast-mirror.isrc.ac.cn/openeuler-sig-riscv/openEuler-RISC-V/RVCK/OERV-RVCI_rvck-olk_1/Image'
-      testcase_repo: ${{ github.repository.clone_url }}
-      testcase_ref: ${{ github.event.pull_request.head.ref }}
+      qemu_job_name: ${{ needs.parse-request.outputs.qemu_job_name }}
+      testcase_repo: ${{ github.repository }}
+      testcase_ref: ${{ github.event.pull_request.head.ref || 'main' }}
       lava_template: ${{ needs.parse-request.outputs.lava_template }}
       testcase_url: ${{ needs.parse-request.outputs.lava_testcase_url }}
       
