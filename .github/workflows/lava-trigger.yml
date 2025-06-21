@@ -80,7 +80,7 @@ jobs:
         run: echo "ssh_port=$(od -An -N2 -i /dev/urandom | awk -v min=10000 -v max=20000 '{print min + ($1 % (max - min + 1))}')" >> $GITHUB_OUTPUT
 
       - name: setup_lava_template
-        shell: python3
+        shell: python3 {0}
         env:
           ssh_port: ${{ steps.random_ssh_port.outputs.ssh_port }}
         run: |

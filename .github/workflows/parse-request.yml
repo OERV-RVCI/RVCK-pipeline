@@ -78,7 +78,7 @@ jobs:
     
       - name: show-info
         env:
-          action_repository: github.action_repository	
+          action_repository: ${{ github.action_repository	}}
         run: |
           echo "action_repository: ${action_repository}"
           echo "event_type: $x_github_event"
