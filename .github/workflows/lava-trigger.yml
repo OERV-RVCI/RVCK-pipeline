@@ -79,12 +79,12 @@ jobs:
         env:
           github_repo: ${{ github.repository }}
           event_name: ${{ github.event_name }}
-          ref_name: ${{ github.ref_name }}
+          issue_id: ${{ github.event.pull_request.number || github.event.issue_comment.number || github.event.issue.number }}
         run: |
           echo "ssh_port=$(od -An -N2 -i /dev/urandom | awk -v min=10000 -v max=20000 '{print min + ($1 % (max - min + 1))}')" >> $GITHUB_OUTPUT
-          qemu_job_name="${github_repo/\//_}_${event_name}_${ref_name/\//_}"
+          qemu_job_name="${github_repo/\//_}_${event_name}_${issue_id:-"$(date +"%Y%m%d")"}"
           echo "qemu_job_name=$qemu_job_name" >> $GITHUB_OUTPUT
-          echo "testitem_name=${qemu_job_name}_$(t="${lava_template##*/}"; echo "${t%.*}")_$(t="${testcase_url##*/}"; echo "${t%.*}")" >> $GITHUB_OUTPUT
+          echo "testitem_name=${qemu_job_name}_$(echo "${testcase_url}" | awk -F'/' '{print $2}')_$(yq .device_type "${lava_template}")" >> $GITHUB_OUTPUT
 
       - name: setup_lava_template
         shell: python3 {0}
