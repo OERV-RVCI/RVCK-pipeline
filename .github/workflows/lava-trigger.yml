@@ -133,7 +133,7 @@ jobs:
           data['context']['extra_options'] = [i.replace('hostfwd=tcp::10001-:22', f'hostfwd=tcp::{ssh_port}-:22') for i in list(data['context']['extra_options'])]
           data['actions'][0]['deploy']['images']['kernel']['url'] = kernel_download_url
           data['actions'][0]['deploy']['images']['rootfs']['url'] = rootfs_download_url
-          data['actions'][2]['test']['definitions'][0]['repository'] = testcase_repo
+          data['actions'][2]['test']['definitions'][0]['repository'] = f"https://github.com/{testcase_repo}.git"
           data['actions'][2]['test']['definitions'][0]['branch'] = testcase_ref
           data['actions'][2]['test']['definitions'][0]['name'] = f'{testitem_name}_{data["device_type"]}' 
           data['actions'][2]['test']['definitions'][0]['path'] = testcase_url
