@@ -111,6 +111,9 @@ jobs:
           qemu_job_name = os.getenv("qemu_job_name")
           assert qemu_job_name, "QEMU job name is not set"
 
+          testitem_name = os.getenv("testitem_name")
+          assert testitem_name, "testitem_name is not set"
+
           ssh_port = os.getenv("ssh_port")
           assert ssh_port, "SSH port is not set"
 
