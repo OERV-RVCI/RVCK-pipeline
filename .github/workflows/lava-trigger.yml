@@ -7,11 +7,6 @@ on:
         value: ${{ jobs.lava-trigger.outputs.summary_content }}
 
     inputs:
-      qemu_job_name:
-        description: 'qemu 任务名'
-        type: string
-        required: true
-
       kernel_download_url:
         description: '内核下载链接'
         type: string
@@ -54,7 +49,6 @@ on:
         required: true
 
 env:
-  qemu_job_name: ${{ inputs.qemu_job_name }}
   testcase_repo: ${{ inputs.testcase_repo }}
   testcase_ref: ${{ inputs.testcase_ref }}
   kernel_download_url: ${{ inputs.kernel_download_url }}
@@ -80,14 +74,24 @@ jobs:
           repository: ${{ inputs.testcase_repo }}
           ref: ${{ inputs.testcase_ref }}
 
-      - name: random ssh port
-        id: random_ssh_port
-        run: echo "ssh_port=$(od -An -N2 -i /dev/urandom | awk -v min=10000 -v max=20000 '{print min + ($1 % (max - min + 1))}')" >> $GITHUB_OUTPUT
+      - name: gen var
+        id: gen_var
+        env:
+          github_repo: ${{ github.repository }}
+          event_name: ${{ github.event_name }}
+          ref_name: ${{ github.ref_name }}
+        run: |
+          echo "ssh_port=$(od -An -N2 -i /dev/urandom | awk -v min=10000 -v max=20000 '{print min + ($1 % (max - min + 1))}')" >> $GITHUB_OUTPUT
+          qemu_job_name="${github_repo/\//_}_${event_name}_${ref_name/\//_}"
+          echo "qemu_job_name=$qemu_job_name" >> $GITHUB_OUTPUT
+          echo "testitem_name=${qemu_job_name}_$(t="${lava_template##*/}"; echo "${t%.*}")_$(t="${testcase_url##*/}"; echo "${t%.*}")" >> $GITHUB_OUTPUT
 
       - name: setup_lava_template
         shell: python3 {0}
         env:
-          ssh_port: ${{ steps.random_ssh_port.outputs.ssh_port }}
+          ssh_port: ${{ steps.gen_var.outputs.ssh_port }}
+          qemu_job_name: ${{ steps.gen_var.outputs.qemu_job_name }}
+          testitem_name: ${{ steps.gen_var.outputs.testitem_name }}
         run: |
           import yaml
           import os
@@ -128,8 +132,7 @@ jobs:
           data['actions'][0]['deploy']['images']['rootfs']['url'] = rootfs_download_url
           data['actions'][2]['test']['definitions'][0]['repository'] = testcase_repo
           data['actions'][2]['test']['definitions'][0]['branch'] = testcase_ref
-          data['actions'][2]['test']['definitions'][0]['name'] = f'{qemu_job_name.replace("/", "-")}_{testcase_url.split("/")[-1]}_{data["device_type"]}'
-          open('testitem_name', 'w').write(data['actions'][2]['test']['definitions'][0]['name'])
+          data['actions'][2]['test']['definitions'][0]['name'] = f'{testitem_name}_{data["device_type"]}'
           data['actions'][2]['test']['definitions'][0]['path'] = testcase_url
           data['actions'][2]['test']['definitions'][0].pop('parameters', None)
 
@@ -142,9 +145,10 @@ jobs:
         env:
           lava_admin_token: ${{ secrets.lava_token }}
           lavacli_max_retry: 5
-          lavacli_retry_delay: 30 
+          lavacli_retry_delay: 30
+          qemu_job_name: ${{ steps.gen_var.outputs.qemu_job_name }}
+          testitem_name: ${{ steps.gen_var.outputs.testitem_name }}
         run: |
-          testitem_name=$(cat testitem_name)
           lavacli_admim(){
               command=$1
               option=$2
@@ -193,12 +197,28 @@ jobs:
           cat > summary << EEE
           ## LAVA Check
           
+          - testcase_repo: ${testcase_repo}
+          - testcase_ref: ${testcase_ref}
+          - lava_template: ${lava_template}
+          - testcase_url: ${testcase_url}
+          - kernel_download_url: ${kernel_download_url}
+          - rootfs_download_url: ${rootfs_download_url}
+          
           $(if [ "${lava_result}" = "Complete" ]; then echo "Lava check done!"; else echo "Lava check fail!"; fi) result url: ${lava_result_url}
 
           EEE
 
-          cat summary > $GITHUB_STEP_SUMMARY
           
           echo "summary_content<<EOF" >> $GITHUB_OUTPUT
           cat summary >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          
+          cat > $GITHUB_STEP_SUMMARY << EEE
+          $(cat summary)
+
+          ### setupd template:
+          
+          \`\`\`yaml
+          $(cat "${lava_template}")
+          \`\`\`
+          EEE
