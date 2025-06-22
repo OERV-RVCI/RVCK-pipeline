@@ -73,7 +73,7 @@ jobs:
       - name: install depends
         run: |
           sudo apt-get update
-          sudo apt-get install lavacli
+          sudo apt-get install lavacli yq
 
       - uses: actions/checkout@v4
         with:
@@ -174,7 +174,7 @@ jobs:
           sleep 5
           echo "lava_result_url=https://${lava_server}/results/${lava_jobid}/0_${testitem_name}" >> $GITHUB_OUTPUT
           echo "lava_result=$(lavacli_admim jobs show ${lava_jobid} | yq .health)" >> $GITHUB_OUTPUT
-          if [ ${lava_result} != "Complete" ];then
+          if [ "${lava_result}" != "Complete" ];then
             exit 1
           fi
           
@@ -193,7 +193,7 @@ jobs:
           cat > summary << EEE
           ## LAVA Check
           
-          $(if [ ${lava_result} = "Complete" ]; then echo "Lava check done!"; else echo "Lava check fail!"; fi) result url: ${lava_result_url}
+          $(if [ "${lava_result}" = "Complete" ]; then echo "Lava check done!"; else echo "Lava check fail!"; fi) result url: ${lava_result_url}
 
           EEE
 
