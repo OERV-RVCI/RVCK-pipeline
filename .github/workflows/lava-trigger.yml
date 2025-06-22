@@ -163,7 +163,7 @@ jobs:
               jobid=$3
               lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ ${command} ${option} ${jobid}
           }
-
+          set -x
           lava_jobid=$(lavacli_admim jobs submit ${lava_template})
 
           for _i in $(seq 1 ${lavacli_max_retry}); do
@@ -180,7 +180,8 @@ jobs:
 
           sleep 5
           echo "lava_result_url=https://${lava_server}/results/${lava_jobid}/0_${testitem_name}" >> $GITHUB_OUTPUT
-          echo "lava_result=$(lavacli_admim jobs show ${lava_jobid} | yq .health)" >> $GITHUB_OUTPUT
+          lava_result=$(lavacli_admim jobs show ${lava_jobid} | yq .health)
+          echo "lava_result=$lava_result" >> $GITHUB_OUTPUT
           if [ "${lava_result}" != "Complete" ];then
             exit 1
           fi
