@@ -179,7 +179,7 @@ jobs:
           done
 
           sleep 5
-          echo "lava_result_url=https://${lava_server}/results/${lava_jobid}/0_${testitem_name}" >> $GITHUB_OUTPUT
+          echo "lava_log=https://lava.oerv.ac.cn/scheduler/job/${lava_jobid}" >> $GITHUB_OUTPUT
           lava_result=$(lavacli_admim jobs show ${lava_jobid} | yq .health)
           echo "lava_result=$lava_result" >> $GITHUB_OUTPUT
           if [ "${lava_result}" != "Complete" ];then
@@ -193,7 +193,7 @@ jobs:
         id: summary
         if: ${{ !cancelled() }}
         env:
-          lava_result_url: ${{ steps.run_lava_check.outputs.lava_result_url }}
+          lava_log: ${{ steps.run_lava_check.outputs.lava_log }}
           lava_result: ${{ steps.run_lava_check.outputs.lava_result }}
         run: |
           
@@ -208,6 +208,8 @@ jobs:
           - kernel_download_url: ${kernel_download_url}
           - rootfs_download_url: ${rootfs_download_url}
           
+          lava log: ${lava_log}
+
           $(if [ "${lava_result}" = "Complete" ]; then echo "Lava check done!"; else echo "Lava check fail!"; fi) result url: ${lava_result_url}
 
           EEE
