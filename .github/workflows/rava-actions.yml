@@ -12,7 +12,7 @@ jobs:
     outputs:
       lava_template: ${{ steps.parse.outputs.lava_template }}
       lava_testcase_url: ${{ steps.parse.outputs.lava_testcase_url }}
-      qemu_job_name: ${{ steps.parse.outputs.qemu_job_name }}
+      testcase_ref: ${{ steps.parse.outputs.testcase_ref }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
@@ -20,40 +20,53 @@ jobs:
     steps:
       - id: parse
         run: |
-          if [ "$event_name" = 'pull_request' ] || [ "$event_name" = 'pull_request_target' ]; then
-            title="$(gh pr view ${{ github.event.pull_request.number }} --json title -q '.title')"
+          function parse_pr() {
+            title="$1"
             # title=[lava-job-template/qemu/qemu.yaml]-[lava-testcases/common-test/ltp/ltp.yaml]: xxx
-            lava_template=$(echo "$title" | awk -F'\\]-\\[' '{print $1}')
-            lava_template="${lava_template#\[}"
-            lava_template="${lava_template%\]*}"
-            [ -z "$lava_template" ] && exit 0
-
-            lava_testcase_url=$(echo "$title" | awk -F'\\]-\\[' '{print $2}')
-            lava_testcase_url="${lava_testcase_url#\[}"
-            lava_testcase_url="${lava_testcase_url%\]*}"
-            [ -z "$lava_testcase_url" ] && exit 0
-
-          elif [ "$event_name" = 'issues' ]; then
-            true
-          elif [ "$event_name" = 'issue_comment' ]; then
-            comment_body="${{ github.event.comment.body }}"
-            if [ "$(echo "$comment_body" | awk -F'-' '{print $1}')" != '/check' ]; then
-              echo "This is not a check command, exiting."
-              exit 0
+            if [ "$lava_template" = "" ]; then
+              lava_template=$(echo "$title" | awk -F'\\]-\\[' '{print $1}')
+              lava_template="${lava_template#\[}"
+              lava_template="${lava_template%\]*}"
             fi
-            lava_template=$(echo "$comment_body" | awk -F'lava_template=' '{print $2}' | awk '{print $1}')
-            lava_testcase_url=$(echo "$comment_body" | awk -F'testcase_url=' '{print $2}' | awk '{print $1}')
-          
+            if [ "$lava_testcase_url" = "" ]; then
+              lava_testcase_url=$(echo "$title" | awk -F'\\]-\\[' '{print $2}')
+              lava_testcase_url="${lava_testcase_url#\[}"
+              lava_testcase_url="${lava_testcase_url%\]*}"
+            fi
+            testcase_ref="${{ github.ref }}"
+          }
+
+          function parse_comment() {
+            comment_body="$1"
+            if [ "$(echo "$comment_body" | awk -F'-' '{print $1}')" != '/check' ]; then
+              return -1
+            fi
+            lava_template="$(echo "$comment_body" | awk -F'lava_template=' '{print $2}' | awk '{print $1}')"
+            lava_testcase_url="$(echo "$comment_body" | awk -F'testcase_url=' '{print $2}' | awk '{print $1}')"
+            testcase_ref="$(echo "$comment_body" | awk -F'testcase_ref=' '{print $2}' | awk '{print $1}' )"
+          }
+
+          if [ "$event_name" = 'pull_request' ] || [ "$event_name" = 'pull_request_target' ]; then
+            parse_pr "${{ github.event.pull_request.title }}"
+          elif [ "$event_name" = 'issues' ]; then
+            parse_comment "${{ github.event.issue.body }}"
+          elif [ "$event_name" = 'issue_comment' ]; then
+            parse_comment "${{ github.event.comment.body }}"
+            if [ "${{ github.event.issue.pull_request }}" != "" ]; then
+              parse_comment "${{ github.event.issue.title }}"
+            fi
           fi
 
           echo "lava_template=$lava_template" >> $GITHUB_OUTPUT
           echo "lava_testcase_url=$lava_testcase_url" >> $GITHUB_OUTPUT
+          echo "testcase_ref=$testcase_ref" >> $GITHUB_OUTPUT
 
           cat > $GITHUB_STEP_SUMMARY << EOF
           ## LAVA Check Request
           
           - LAVA Template: $lava_template
           - Testcase URL: $lava_testcase_url
+          - Testcase ref: $testcase_ref
 
           EOF
 
@@ -67,7 +80,6 @@ jobs:
     with:
       kernel_download_url: 'https://fast-mirror.isrc.ac.cn/openeuler-sig-riscv/openEuler-RISC-V/RVCK/OERV-RVCI/rvck-olk/1/Image'
       testcase_repo: ${{ github.repository }}
-      testcase_ref: ${{ github.event.pull_request.head.ref || 'main' }}
+      testcase_ref: ${{ needs.parse-request.outputs.testcase_ref || 'main' }}
       lava_template: ${{ needs.parse-request.outputs.lava_template }}
       testcase_url: ${{ needs.parse-request.outputs.lava_testcase_url }}
-      
