@@ -33,7 +33,9 @@ jobs:
               lava_testcase_url="${lava_testcase_url#\[}"
               lava_testcase_url="${lava_testcase_url%\]*}"
             fi
-            testcase_ref="${{ github.ref }}"
+
+            ## pr 强制使用当前分支，不允许指定
+            testcase_ref="${{ github.sha }}"
           }
 
           function parse_comment() {

@@ -24,10 +24,9 @@ on:
         type: string
 
       testcase_ref:
-        description: 'lava 仓库分支'
+        description: 'lava 仓库sha值'
         required: false
         type: string
-        default: "main"
 
       lava_template:
         description: 'lava测试模板'
@@ -72,7 +71,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ${{ inputs.testcase_repo }}
-          ref: ${{ inputs.testcase_ref }}
+          ref: ${{ inputs.testcase_ref || 'main' }}
 
       - name: gen var
         id: gen_var
@@ -100,7 +99,6 @@ jobs:
           assert testcase_repo, "Testcase repository is not set"
 
           testcase_ref = os.getenv("testcase_ref", "")
-          assert testcase_ref, "Testcase ref is not set"
 
           lava_template = os.getenv("lava_template")
           assert lava_template, "Lava template is not set"
@@ -134,7 +132,8 @@ jobs:
           data['actions'][0]['deploy']['images']['kernel']['url'] = kernel_download_url
           data['actions'][0]['deploy']['images']['rootfs']['url'] = rootfs_download_url
           data['actions'][2]['test']['definitions'][0]['repository'] = f"https://github.com/{testcase_repo}.git"
-          data['actions'][2]['test']['definitions'][0]['branch'] = testcase_ref
+          if len(testcase_ref):
+              data['actions'][2]['test']['definitions'][0]['rivision'] = testcase_ref
           data['actions'][2]['test']['definitions'][0]['name'] = f'{testitem_name}_{data["device_type"]}' 
           data['actions'][2]['test']['definitions'][0]['path'] = testcase_url
           data['actions'][2]['test']['definitions'][0].pop('parameters', None)
@@ -197,7 +196,6 @@ jobs:
           lava_result: ${{ steps.run_lava_check.outputs.lava_result }}
         run: |
           
-
           cat > summary << EEE
           ## LAVA Check
           
