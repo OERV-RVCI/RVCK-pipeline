@@ -47,7 +47,8 @@ jobs:
             lava_testcase_url="$(echo "$comment_body" | awk -F'testcase_url=' '{print $2}' | awk '{print $1}')"
             testcase_ref="$(echo "$comment_body" | awk -F'testcase_ref=' '{print $2}' | awk '{print $1}' )"
           }
-
+          
+          set -x
           if [ "$event_name" = 'pull_request' ] || [ "$event_name" = 'pull_request_target' ]; then
             parse_pr "${{ github.event.pull_request.title }}"
           elif [ "$event_name" = 'issues' ]; then
@@ -58,6 +59,7 @@ jobs:
               parse_comment "${{ github.event.issue.title }}"
             fi
           fi
+          set +x
 
           echo "lava_template=$lava_template" >> $GITHUB_OUTPUT
           echo "lava_testcase_url=$lava_testcase_url" >> $GITHUB_OUTPUT
