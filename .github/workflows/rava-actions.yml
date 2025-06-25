@@ -40,7 +40,7 @@ jobs:
 
           function parse_comment() {
             comment_body="$1"
-            if [ "$(echo "$comment_body" | awk -F'-' '{print $1}')" != '/check' ]; then
+            if [ "${comment_body:0:6}" != '/check' ]; then
               return -1
             fi
             lava_template="$(echo "$comment_body" | awk -F'lava_template=' '{print $2}' | awk '{print $1}')"
@@ -56,7 +56,7 @@ jobs:
           elif [ "$event_name" = 'issue_comment' ]; then
             parse_comment "${{ github.event.comment.body }}"
             if [ "${{ github.event.issue.pull_request }}" != "" ]; then
-              parse_comment "${{ github.event.issue.title }}"
+              parse_pr "${{ github.event.issue.title }}"
             fi
           fi
           set +x
