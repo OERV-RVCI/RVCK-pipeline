@@ -181,7 +181,7 @@ jobs:
           echo "lava_log=https://lava.oerv.ac.cn/scheduler/job/${lava_jobid}" >> $GITHUB_OUTPUT
           lava_result=$(lavacli_admim jobs show ${lava_jobid} | yq .health)
           echo "lava_result=$lava_result" >> $GITHUB_OUTPUT
-          if [ "${lava_result}" != "Complete" ];then
+          if [ "${lava_result}" != '"Complete"' ];then
             exit 1
           fi
           
@@ -208,7 +208,7 @@ jobs:
           
           lava log: ${lava_log}
 
-          $(if [ "${lava_result}" = "Complete" ]; then echo "Lava check done!"; else echo "Lava check fail!"; fi) result url: ${lava_result_url}
+          $(if [ "${lava_result}" = '"Complete"' ]; then echo "Lava check done!"; else echo "Lava check fail!"; fi) result url: ${lava_result_url}
 
           EEE
 
