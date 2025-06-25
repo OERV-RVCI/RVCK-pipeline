@@ -35,7 +35,7 @@ jobs:
   check-patch:
     outputs:
       summary_content: ${{ steps.check-patch.outputs.summary_content }}
-    runs-on: 'action-runner-9950x-196.2'
+    runs-on: 'ubuntu-latest'
     container:
       image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
     env:

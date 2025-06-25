@@ -31,7 +31,8 @@ on:
 
 jobs:
   kernel-build:
-    runs-on: 'action-runner-9950x-196.2'
+    runs-on:
+      group: 9950x
     container:
       image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
       volumes:
