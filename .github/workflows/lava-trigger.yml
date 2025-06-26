@@ -66,7 +66,7 @@ jobs:
       - name: install depends
         run: |
           sudo apt-get update
-          sudo apt-get install lavacli yq
+          sudo apt-get install lavacli
 
       - uses: actions/checkout@v4
         with:
@@ -192,6 +192,11 @@ jobs:
     env: 
       lava_jobid: ${{ needs.lava-trigger.outputs.lava_jobid }}
     steps:
+      - name: install depends
+        run: |
+          sudo apt-get update
+          sudo apt-get install lavacli
+
       - id: summary
         run: |
           lava_health=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs show ${lava_jobid} | grep 'Health ' | awk '{print $NF}')
