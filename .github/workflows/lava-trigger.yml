@@ -176,6 +176,7 @@ jobs:
           lava_jobid: ${{ needs.lava-trigger.outputs.lava_jobid }}
         continue-on-error: true
         run: |
+          set -x
           lava_state=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs show ${lava_jobid} | grep 'state ' | awk '{print $NF}')
           while [ "$lava_state" = 'Running' ]; do
             lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs wait --polling $((60 * 60 * 2)) ${lava_jobid} || true
@@ -198,10 +199,12 @@ jobs:
           sudo apt-get install lavacli
 
       - id: summary
+        shell: bash
         run: |
+          set -x
           lava_health=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs show ${lava_jobid} | grep 'Health ' | awk '{print $NF}')
           lava_results=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ results ${lava_jobid} | sed '1d')
-          
+        
           declare -A cnt_result_status=()
           while read -r st; do
             cnt_result_status[$st]=$((cnt_result_status[$st] + 1))
