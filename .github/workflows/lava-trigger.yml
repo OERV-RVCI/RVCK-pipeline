@@ -55,6 +55,7 @@ env:
   lava_template: ${{ inputs.lava_template }}
   testcase_url: ${{ inputs.testcase_url }}
   lava_server: lava.oerv.ac.cn
+  lava_admin_token: ${{ secrets.lava_token }}
   
 jobs:
   lava-trigger:
@@ -145,9 +146,6 @@ jobs:
         id: run_lava_check
         shell: bash
         env:
-          lava_admin_token: ${{ secrets.lava_token }}
-          lavacli_max_retry: 5
-          lavacli_retry_delay: 30
           qemu_job_name: ${{ steps.gen_var.outputs.qemu_job_name }}
           testitem_name: ${{ steps.gen_var.outputs.testitem_name }}
         run: |
@@ -203,10 +201,11 @@ jobs:
         run: |
           set -x
           lava_health=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs show ${lava_jobid} | grep 'Health ' | awk '{print $NF}')
-          lava_results=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ results ${lava_jobid} | sed '1d')
+          lava_results=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ results ${lava_jobid} | awk '{print $3}' || echo "")
         
           declare -A cnt_result_status=()
           while read -r st; do
+            if [ "$st" = "" ]; then continue; fi
             cnt_result_status[$st]=$((cnt_result_status[$st] + 1))
           done < <(awk '{print $NF}' <<< "$lava_results")
 
