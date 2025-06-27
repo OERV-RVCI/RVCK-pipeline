@@ -201,13 +201,13 @@ jobs:
         run: |
           set -x
           lava_health=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs show ${lava_jobid} | grep 'Health ' | awk '{print $NF}')
-          lava_results=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ results ${lava_jobid} | awk '{print $3}' || echo "")
+          lava_results=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ results ${lava_jobid} || echo "")
         
           declare -A cnt_result_status=()
           while read -r st; do
             if [ "$st" = "" ]; then continue; fi
             cnt_result_status[$st]=$((cnt_result_status[$st] + 1))
-          done < <(awk '{print $NF}' <<< "$lava_results")
+          done < <(awk '{print $3}' <<< "$lava_results")
 
           result_status_desc=""
           for st in "${!cnt_result_status[@]}"; do
