@@ -50,7 +50,7 @@ jobs:
         with:
           repository: ${{ inputs.kernel_src_repo }}
           ref: ${{ inputs.fetch_ref }}
-          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: run kernel build
         id: kernel-build
