@@ -97,17 +97,18 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ISSUE_ID: ${{ github.event.pull_request.number || github.event.issue.number }}
       lava_result_summary: ${{ needs.run-lava-check.outputs.summary_content }}
-    run: |
-      log_dir="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-      cat > summary << EEE
-      # RAVA actions result
+    steps:
+      - run: |
+          log_dir="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          cat > summary << EEE
+          # RAVA actions result
 
-      > log: [$log_dir]($log_dir)
-      
-      $lava_result_summary
+          > log: [$log_dir]($log_dir)
+          
+          $lava_result_summary
 
-      EEE
-      cat summary > $GITHUB_STEP_SUMMARY
-      if [ "$ISSUE_ID" != "" ]; then
-        gh issue comment "$ISSUE_ID" -b "$(cat summary)" -R "$GH_REPO"
-      fi
+          EEE
+          cat summary > $GITHUB_STEP_SUMMARY
+          if [ "$ISSUE_ID" != "" ]; then
+            gh issue comment "$ISSUE_ID" -b "$(cat summary)" -R "$GH_REPO"
+          fi
