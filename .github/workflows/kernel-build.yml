@@ -35,26 +35,48 @@ jobs:
       group: 9950x
     container:
       image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
-      volumes:
-        - /srv/nginx/kernel-build:/srv/nginx/kernel-build
+      
     outputs:
       kernel_download_url: ${{ steps.publish-kernel.outputs.kernel_download_url }}
       summary_content: ${{ steps.summary.outputs.summary_content }}
+
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       kernel_result_dir: kernel-result
 
     steps:
       - name: checkout kernel-src
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ inputs.kernel_src_repo }}
-          ref: ${{ inputs.fetch_ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
+        env:
+          REPO: ${{ inputs.kernel_src_repo }}
+          fetch_ref: ${{ inputs.fetch_ref }}
+        run: |
+          rm -rf kernel-src || true
+          
+          git init kernel-src
+          cd kernel-src
+          git config user.email rvci@isrc.iscas.ac.cn
+          git config user.name rvci
+          git remote add origin "${REPO}"
+
+          res=false
+          for((retry_times=0; retry_times < 10; retry_times++)); do
+              if git fetch origin "$fetch_ref":"$fetch_ref" --depth=1 --progress; then
+                  res=true
+                  break
+              fi
+              sleep 5
+          done
+          if [ "$res" != "true" ]; then
+              exit 1
+          fi
+
+          git checkout "$fetch_ref"
+
+        
       - name: run kernel build
         id: kernel-build
         run: |
+          cd kernel-src
           export ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu-
           make distclean
           make openeuler_defconfig
@@ -62,13 +84,13 @@ jobs:
           make modules -j$(nproc)
           make dtbs -j$(nproc)
 
-          make INSTALL_MOD_PATH="$kernel_result_dir" modules_install -j$(nproc)
-          mkdir -p "$kernel_result_dir/dtb/thead"
-          cp vmlinux "$kernel_result_dir"
-          cp arch/riscv/boot/Image "$kernel_result_dir/Image"
+          make INSTALL_MOD_PATH="../$kernel_result_dir" modules_install -j$(nproc)
+          mkdir -p "../$kernel_result_dir/dtb/thead"
+          cp vmlinux "../$kernel_result_dir"
+          cp arch/riscv/boot/Image "../$kernel_result_dir/Image"
           
-          install -m 644 $(find arch/riscv/boot/dts/ -name "*.dtb") "$kernel_result_dir"/dtb
-          mv $(find arch/riscv/boot/dts/ -name "th1520*.dtb") "$kernel_result_dir"/dtb/thead
+          install -m 644 $(find arch/riscv/boot/dts/ -name "*.dtb") "../$kernel_result_dir"/dtb
+          mv $(find arch/riscv/boot/dts/ -name "th1520*.dtb") "../$kernel_result_dir"/dtb/thead
 
       - name: publish kernel
         id: publish-kernel
