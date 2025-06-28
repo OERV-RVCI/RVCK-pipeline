@@ -80,7 +80,7 @@ def issue_comment(payload: dict):
 
 def pull_request(payload: dict):
     # pr 创建
-    if payload["action"] not in ["opened", "synchronize"]:
+    if payload["action"] not in ["opened", "reopend", "synchronize"]:
         return
     
     print(f"from pr {payload['action']}")
