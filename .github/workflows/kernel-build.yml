@@ -49,9 +49,11 @@ jobs:
         env:
           REPO: ${{ inputs.kernel_src_repo }}
           fetch_ref: ${{ inputs.fetch_ref }}
+        shell: bash
         run: |
           rm -rf kernel-src || true
-          
+        
+          set -ex
           git init kernel-src
           cd kernel-src
           git config user.email rvci@isrc.iscas.ac.cn
