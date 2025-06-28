@@ -181,7 +181,17 @@ jobs:
             lava_state=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs show ${lava_jobid} | grep 'state ' | awk '{print $NF}' || echo 'Running')
           done
           
-  
+  on-cancel:
+    runs-on: 'ubuntu-latest'
+    needs: [lava-trigger]
+    if: ${{ cancelled() }}
+    env: 
+      lava_jobid: ${{ needs.lava-trigger.outputs.lava_jobid }}
+    steps:
+      - run: |
+          set -x
+          lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs cancel ${lava_jobid}
+
   collect-summary:
     outputs:
       summary_content: ${{ steps.summary.outputs.summary_content }}
