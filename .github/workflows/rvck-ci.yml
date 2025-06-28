@@ -15,7 +15,7 @@ jobs:
     needs: [parse-request]
     uses: ./.github/workflows/kunit-test.yml
     with:
-      kernel_src_repo: ${{ github.repository }}
+      kernel_src_repo: ${{ needs.parse-request.outputs.REPO }}
       fetch_ref: ${{ needs.parse-request.outputs.FETCH_REF }}
   
   kernel-build:
