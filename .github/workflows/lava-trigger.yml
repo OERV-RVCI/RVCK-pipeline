@@ -183,14 +183,16 @@ jobs:
           
   on-cancel:
     runs-on: 'ubuntu-latest'
-    needs: [lava-trigger]
+    needs: [lava-trigger, lava-result]
     if: ${{ cancelled() }}
     env: 
       lava_jobid: ${{ needs.lava-trigger.outputs.lava_jobid }}
     steps:
       - run: |
           set -x
-          lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs cancel ${lava_jobid}
+          if [ "$lava_jobid" != "" ]; then
+            lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs cancel ${lava_jobid}
+          fi
 
   collect-summary:
     outputs:
