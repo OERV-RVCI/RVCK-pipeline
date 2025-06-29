@@ -1,8 +1,0 @@
-name: RVCK CI
-
-on:
-  workflow_call:
-
-jobs:
-  kernel-build:
-    uses: ./.github/workflows/kernel-build.yml
