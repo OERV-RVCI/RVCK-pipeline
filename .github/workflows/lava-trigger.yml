@@ -144,16 +144,16 @@ jobs:
 
       - name: run lava check
         id: run_lava_check
-        shell: bash
         env:
           qemu_job_name: ${{ steps.gen_var.outputs.qemu_job_name }}
           testitem_name: ${{ steps.gen_var.outputs.testitem_name }}
+        shell: bash
         run: |
           
-          set -x
-          lava_jobid=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs submit ${lava_template})
+          set -ex
+          lava_jobid=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs submit ${lava_template}||echo "")
+          if [ -z "$lava_jobid" ]; then exit 1; fi
           echo "lava_jobid=$lava_jobid" >> $GITHUB_OUTPUT
-          seq -s',' 1 40
 
   lava-result:
     needs: [lava-trigger]
