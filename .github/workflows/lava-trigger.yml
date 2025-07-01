@@ -149,7 +149,7 @@ jobs:
           testitem_name: ${{ steps.gen_var.outputs.testitem_name }}
         shell: bash
         run: |
-          
+          cat ${lava_template} >> 
           set -ex
           lava_jobid=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs submit ${lava_template}||echo "")
           if [ -z "$lava_jobid" ]; then exit 1; fi
@@ -258,4 +258,10 @@ jobs:
           \`\`\`log
           $lava_results
           \`\`\`
+
+          ### setuped template
+          \`\`\`log
+          $(cat lava_template)
+          \`\`\`
+
           EEE
