@@ -151,8 +151,8 @@ jobs:
         run: |
           cat ${lava_template} >> 
           set -ex
-          lava_jobid=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs submit ${lava_template}||echo "")
-          if [ -z "$lava_jobid" ]; then exit 1; fi
+          lava_jobid=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs submit ${lava_template})
+          if [[ ! "$lava_jobid" =~ ^[0-9]+$ ]]; then echo "$lava_jobid"; exit 1; fi
           echo "lava_jobid=$lava_jobid" >> $GITHUB_OUTPUT
 
   lava-result:
