@@ -2,9 +2,6 @@ name: RAVA actions
 
 on:
   workflow_call:
-    secrets:
-      lava_token:
-        required: true
 
 jobs:
   parse-request:
@@ -81,7 +78,7 @@ jobs:
     if: ${{ needs.parse-request.outputs.lava_template && needs.parse-request.outputs.lava_testcase_url }}
     uses: ./.github/workflows/lava-trigger.yml
     secrets:
-      lava_token: ${{ secrets.lava_token }}
+      lava_token: ${{ secrets.LAVA_TOKEN }}
     with:
       kernel_download_url: 'https://fast-mirror.isrc.ac.cn/openeuler-sig-riscv/openEuler-RISC-V/RVCK/OERV-RVCI/rvck-olk/1/Image'
       testcase_repo: ${{ github.repository }}
@@ -92,7 +89,7 @@ jobs:
   collect-result:
     runs-on: 'ubuntu-latest'
     needs: [run-lava-check]
-    if: ${{ needs.run-lava-check.summary_content }}
+    if: ${{ !cancelled() }}
     env:
       GH_REPO: ${{ github.repository }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
