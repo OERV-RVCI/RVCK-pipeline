@@ -149,7 +149,7 @@ jobs:
           testitem_name: ${{ steps.gen_var.outputs.testitem_name }}
         shell: bash
         run: |
-          cat ${lava_template} >> 
+          cat $lava_template
           set -ex
           lava_jobid=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs submit ${lava_template})
           if [[ ! "$lava_jobid" =~ ^[0-9]+$ ]]; then echo "$lava_jobid"; exit 1; fi
@@ -199,7 +199,7 @@ jobs:
       summary_content: ${{ steps.summary.outputs.summary_content }}
     runs-on: 'ubuntu-latest'
     needs: [lava-trigger, lava-result]
-    if: ${{ !cancelled() }}
+    if: ${{ needs.lava-trigger.outputs.lava_jobid && !cancelled() }}
     env: 
       lava_jobid: ${{ needs.lava-trigger.outputs.lava_jobid }}
     steps:
@@ -261,7 +261,7 @@ jobs:
 
           ### setuped template
           \`\`\`log
-          $(cat lava_template)
+          $(cat $lava_template)
           \`\`\`
 
           EEE
