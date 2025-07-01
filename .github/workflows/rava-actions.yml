@@ -68,6 +68,7 @@ jobs:
           cat > $GITHUB_STEP_SUMMARY << EOF
           ## LAVA Check Request
           
+          - repository: $GH_REPO
           - LAVA Template: $lava_template
           - Testcase URL: $lava_testcase_url
           - Testcase ref: $testcase_ref
