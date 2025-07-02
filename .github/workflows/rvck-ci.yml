@@ -43,8 +43,6 @@ jobs:
     uses: ./.github/workflows/check-patch.yml
     secrets: inherit
     with:
-      WORKFLOW_REPO: OERV-RVCI/RVCK-pipeline
-      WORKFLOW_REF: actions
       kernel_src_repo: ${{ needs.parse-request.outputs.REPO }}
       fetch_ref: ${{ needs.parse-request.outputs.FETCH_REF }}
       src_ref: ${{ needs.parse-request.outputs.SRC_REF }}
