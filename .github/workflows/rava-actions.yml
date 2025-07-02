@@ -1,8 +1,7 @@
 name: RAVA actions
 
 on:
-  workflow_call:
-    
+  workflow_call:   
     secrets:
       lava_token:
         required: true
