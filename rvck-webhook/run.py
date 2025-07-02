@@ -78,7 +78,7 @@ def issue_comment(payload: dict):
     write_properties_file(res)
 
 
-def pull_request(payload: dict):
+def pull_request_target(payload: dict):
     # pr 创建
     if payload["action"] not in ["opened", "reopend", "synchronize"]:
         return
@@ -119,7 +119,7 @@ def issues(payload: dict):
 
 support_actions = {
     i.__name__: i
-    for i in [issue_comment, pull_request, issues]
+    for i in [issue_comment, pull_request_target, issues]
 }
 
 

@@ -7,9 +7,6 @@ jobs:
   parse-request:
     uses: ./.github/workflows/parse-request.yml
     secrets: inherit
-    with:
-      WORKFLOW_REPO: OERV-RVCI/RVCK-pipeline
-      WORKFLOW_REF: actions
   
   kunit-test:
     needs: [parse-request]
