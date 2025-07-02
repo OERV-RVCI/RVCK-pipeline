@@ -32,19 +32,22 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ISSUE_ID: ${{ inputs.issue_id }}
       REPO: ${{ inputs.kernel_src_repo }}
+    
     steps:
       - name: checkout kernel-src
+        shell: bash
         run: |
             rm -rf kernel-src || true
             git init kernel-src
             cd kernel-src
+            set -e
             git config user.email rvci@isrc.iscas.ac.cn
             git config user.name rvci
             git remote add origin "${REPO}"
 
             for fetch_ref in "${{ inputs.fetch_ref }}" "${{ inputs.src_ref }}"; do
                 res=false
-                for((retry_times=0; retry_times < MAX_RETRY_TIMES; retry_times++)); do
+                for((retry_times=0; retry_times < 10; retry_times++)); do
                     if git fetch origin "$fetch_ref":"$fetch_ref" --progress; then
                         res=true
                         break
