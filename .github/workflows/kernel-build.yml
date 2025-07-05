@@ -32,7 +32,7 @@ on:
 jobs:
   kernel-build:
     runs-on:
-      group: 9950x
+      group: kernel_build-runner
     container:
       image: 'hub.oepkgs.net/oerv-ci/rava-action-runner:latest'
       

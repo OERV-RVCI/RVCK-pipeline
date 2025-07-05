@@ -164,22 +164,45 @@ jobs:
       matrix:
         wait: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40]
     steps:
+      - id: check-result
+        uses: actions/cache@v4.2.3
+        with:
+          path: is_lava_finish.txt
+          # An explicit key for restoring and saving the cache
+          key: is_lava_finish
+          # Check if a cache entry exists for the given input(s) (key, restore-keys) without downloading the cache
+          lookup-only: true
+      
       - name: install depends
+        if: ${{ steps.check-result.outputs.cache-hit == false }}
         run: |
           sudo apt-get update
           sudo apt-get install lavacli
 
       - name: wait-result ${{ matrix.wait }}
+        id: wait-result
+        if: ${{ steps.check-result.outputs.cache-hit == false }}
         env:
           lava_jobid: ${{ needs.lava-trigger.outputs.lava_jobid }}
         continue-on-error: true
         run: |
           set -x
-          lava_state=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs show ${lava_jobid} | grep 'state ' | awk '{print $NF}')
-          while [ "$lava_state" = 'Running' ] || [ "$lava_state" = Submitted ]; do
-            lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs wait --polling 60 ${lava_jobid} || true
-            lava_state=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs show ${lava_jobid} | grep 'state ' | awk '{print $NF}' || echo 'Running')
+          while true; do
+            lava_state=$(lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs show ${lava_jobid} | grep 'state ' | awk '{print $NF}')
+            if [ "$lava_state" = 'Running' ] || [ "$lava_state" = Submitted ]; then
+              lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs wait --polling 60 ${lava_jobid} || true
+            else
+              echo "is_lava_finish=true" >> $GITHUB_OUTPUT
+              echo "$lava_state" > is_lava_finish.txt
+            fi
           done
+
+      - name: set-result
+        if: ${{ steps.wait-result.outputs.is_lava_finish }}
+        uses: actions/cache@v4.2.3
+        with:
+          key: is_lava_finish
+          path: is_lava_finish.txt
           
   on-cancel:
     runs-on: 'ubuntu-latest'
