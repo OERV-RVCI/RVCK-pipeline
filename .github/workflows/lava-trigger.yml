@@ -169,7 +169,7 @@ jobs:
         with:
           path: is_lava_finish.txt
           # An explicit key for restoring and saving the cache
-          key: is_lava_finish
+          key: is_lava_finish-${{ github.run_id	}}
           # Check if a cache entry exists for the given input(s) (key, restore-keys) without downloading the cache
           lookup-only: true
       
@@ -202,7 +202,7 @@ jobs:
         if: ${{ steps.wait-result.outputs.is_lava_finish }}
         uses: actions/cache@v4.2.3
         with:
-          key: is_lava_finish
+          key: is_lava_finish-${{ github.run_id	}}
           path: is_lava_finish.txt
           
   on-cancel:
