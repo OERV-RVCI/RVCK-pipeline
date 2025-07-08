@@ -34,8 +34,10 @@ jobs:
               lava_testcase_url="${lava_testcase_url%\]*}"
             fi
 
-            ## pr 强制使用当前分支，不允许指定
-            testcase_ref="${{ github.sha }}"
+            ## pr 强制使用当前分支，不允许指定 / issue_comment略过
+            if [ "${{ github.event.pull_request.head.sha }}" != "" ]; then
+              testcase_ref="${{ github.event.pull_request.head.sha }}"
+            fi
           }
 
           function parse_comment() {
