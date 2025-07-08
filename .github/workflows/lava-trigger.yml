@@ -194,6 +194,7 @@ jobs:
             else
               echo "is_lava_finish=true" >> $GITHUB_OUTPUT
               echo "$lava_state" > is_lava_finish.txt
+              break
             fi
           done
 
