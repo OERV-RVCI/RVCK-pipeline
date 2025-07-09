@@ -35,9 +35,10 @@ jobs:
             fi
 
             ## pr 强制使用当前分支，不允许指定 / issue_comment略过
-            if [ "${{ github.event.pull_request.head.sha }}" != "" ]; then
-              testcase_ref="${{ github.event.pull_request.head.sha }}"
-              testcase_ref=${testcase_ref:0:7}
+            if [ "${{ github.event.pull_request.number }}" != "" ]; then
+              # testcase_ref="${{ github.event.pull_request.head.sha }}"
+              # testcase_ref=${testcase_ref:0:7}
+              testcase_ref=pull/${{ github.event.pull_request.number }}/head
             fi
           }
 
@@ -49,7 +50,7 @@ jobs:
             lava_template="$(echo "$comment_body" | awk -F'lava_template=' '{print $2}' | awk '{print $1}')"
             lava_testcase_url="$(echo "$comment_body" | awk -F'testcase_url=' '{print $2}' | awk '{print $1}')"
             testcase_ref="$(echo "$comment_body" | awk -F'testcase_ref=' '{print $2}' | awk '{print $1}' )"
-            testcase_ref=${testcase_ref:0:7}
+            # testcase_ref=${testcase_ref:0:7}
           }
           
           set -x
