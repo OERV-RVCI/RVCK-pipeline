@@ -74,7 +74,7 @@ jobs:
           echo "lava_template=$lava_template" >> $GITHUB_OUTPUT
           echo "lava_testcase_url=$lava_testcase_url" >> $GITHUB_OUTPUT
           echo "testcase_repo=${testcase_repo:-${{ github.repository }}}" >> $GITHUB_OUTPUT
-          echo "testcase_ref=${testcase_ref:0:7}" >> $GITHUB_OUTPUT
+          echo "testcase_ref=${testcase_ref}" >> $GITHUB_OUTPUT
 
           cat > $GITHUB_STEP_SUMMARY << EOF
           ## LAVA Check Request
