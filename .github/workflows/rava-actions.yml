@@ -12,14 +12,20 @@ jobs:
     outputs:
       lava_template: ${{ steps.parse.outputs.lava_template }}
       lava_testcase_url: ${{ steps.parse.outputs.lava_testcase_url }}
+      testcase_repo: ${{ steps.parse.outputs.testcase_repo }}
       testcase_ref: ${{ steps.parse.outputs.testcase_ref }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
       event_name: ${{ github.event_name }}
+      event_info: ${{ toJson(github.event) }}
     steps:
       - id: parse
         run: |
+          echo "==============================="
+          echo "$event_info"
+          echo "==============================="
+
           function parse_pr() {
             title="$1"
             # title=[lava-job-template/qemu/qemu.yaml]-[lava-testcases/common-test/ltp/ltp.yaml]: xxx
@@ -35,10 +41,9 @@ jobs:
             fi
 
             ## pr 强制使用当前分支，不允许指定 / issue_comment略过
-            if [ "${{ github.event.pull_request.number }}" != "" ]; then
-              # testcase_ref="${{ github.event.pull_request.head.sha }}"
-              # testcase_ref=${testcase_ref:0:7}
-              testcase_ref=pull/${{ github.event.pull_request.number }}/head
+            if [ "${{ github.event.pull_request.head.sha }}" != "" ]; then
+              testcase_repo=${{ github.event.pull_request.head.repo.url }}
+              testcase_ref=${{ github.event.pull_request.head.sha }}
             fi
           }
 
@@ -50,7 +55,7 @@ jobs:
             lava_template="$(echo "$comment_body" | awk -F'lava_template=' '{print $2}' | awk '{print $1}')"
             lava_testcase_url="$(echo "$comment_body" | awk -F'testcase_url=' '{print $2}' | awk '{print $1}')"
             testcase_ref="$(echo "$comment_body" | awk -F'testcase_ref=' '{print $2}' | awk '{print $1}' )"
-            # testcase_ref=${testcase_ref:0:7}
+
           }
           
           set -x
@@ -68,7 +73,8 @@ jobs:
 
           echo "lava_template=$lava_template" >> $GITHUB_OUTPUT
           echo "lava_testcase_url=$lava_testcase_url" >> $GITHUB_OUTPUT
-          echo "testcase_ref=$testcase_ref" >> $GITHUB_OUTPUT
+          echo "testcase_repo=${testcase_repo:-${{ github.repository }}}" >> $GITHUB_OUTPUT
+          echo "testcase_ref=${testcase_ref:0:7}" >> $GITHUB_OUTPUT
 
           cat > $GITHUB_STEP_SUMMARY << EOF
           ## LAVA Check Request
@@ -76,6 +82,7 @@ jobs:
           - repository: $GH_REPO
           - LAVA Template: $lava_template
           - Testcase URL: $lava_testcase_url
+          - Testcase repo: $testcase_repo
           - Testcase ref: $testcase_ref
 
           EOF
@@ -89,8 +96,8 @@ jobs:
       lava_token: ${{ secrets.lava_token }}
     with:
       kernel_download_url: 'https://fast-mirror.isrc.ac.cn/openeuler-sig-riscv/openEuler-RISC-V/RVCK/OERV-RVCI/rvck-olk/1/Image'
-      testcase_repo: ${{ github.repository }}
-      testcase_ref: ${{ needs.parse-request.outputs.testcase_ref || 'main' }}
+      testcase_repo: ${{ needs.parse-request.outputs.testcase_repo }}
+      testcase_ref: ${{ needs.parse-request.outputs.testcase_ref }}
       lava_template: ${{ needs.parse-request.outputs.lava_template }}
       testcase_url: ${{ needs.parse-request.outputs.lava_testcase_url }}
   
