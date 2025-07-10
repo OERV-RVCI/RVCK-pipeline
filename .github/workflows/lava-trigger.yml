@@ -70,14 +70,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install lavacli git
 
-      # - uses: actions/checkout@v4
-      #   with:
-      #     repository: ${{ inputs.testcase_repo }}
-      #     ref: ${{ inputs.testcase_ref || 'main' }}
-      - run: |
-          git init .
-          git fetch --depth=1 "https://github.com/${{ inputs.testcase_repo }}.git" "${{ inputs.testcase_ref || 'main' }}:local"
-          git checkout local
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.testcase_repo }}
+          ref: ${{ inputs.testcase_ref || 'main' }}
+      # - run: |
+      #     git init .
+      #     git fetch --depth=1 "https://github.com/${{ inputs.testcase_repo }}.git" "${{ inputs.testcase_ref || 'main' }}:local"
+      #     git checkout local
 
       - name: gen var
         id: gen_var
