@@ -42,7 +42,7 @@ jobs:
 
             ## pr 强制使用当前分支，不允许指定 / issue_comment略过
             if [ "${{ github.event.pull_request.head.sha }}" != "" ]; then
-              testcase_repo=${{ github.event.pull_request.head.repo.url }}
+              testcase_repo=${{ github.event.pull_request.head.repo.full_name }}
               testcase_ref=${{ github.event.pull_request.head.sha }}
             fi
           }
