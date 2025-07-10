@@ -65,15 +65,11 @@ jobs:
     runs-on: 'ubuntu-latest'
 
     steps:
-      - name: install depends
-        run: |
-          sudo apt-get update
-          sudo apt-get install lavacli git
-
       - uses: actions/checkout@v4
         with:
           repository: ${{ inputs.testcase_repo }}
           ref: ${{ inputs.testcase_ref || 'main' }}
+
       # - run: |
       #     git init .
       #     git fetch --depth=1 "https://github.com/${{ inputs.testcase_repo }}.git" "${{ inputs.testcase_ref || 'main' }}:local"
@@ -146,6 +142,11 @@ jobs:
 
           with open(lava_template, 'w') as f:
               f.write(yaml.dump(data))
+
+      - name: install depends
+        run: |
+          sudo apt-get update
+          sudo apt-get install lavacli git
 
       - name: run lava check
         id: run_lava_check
