@@ -219,6 +219,8 @@ jobs:
       lava_jobid: ${{ needs.lava-trigger.outputs.lava_jobid }}
     steps:
       - run: |
+          sudo apt-get update
+          sudo apt-get install lavacli
           set -x
           if [ "$lava_jobid" != "" ]; then
             lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ jobs cancel ${lava_jobid}
