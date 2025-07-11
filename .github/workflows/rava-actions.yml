@@ -22,10 +22,6 @@ jobs:
     steps:
       - id: parse
         run: |
-          echo "==============================="
-          echo "$event_info"
-          echo "==============================="
-
           function parse_pr() {
             title="$1"
             # title=[lava-job-template/qemu/qemu.yaml]-[lava-testcases/common-test/ltp/ltp.yaml]: xxx
@@ -54,8 +50,6 @@ jobs:
             fi
             lava_template="$(echo "$comment_body" | awk -F'lava_template=' '{print $2}' | awk '{print $1}')"
             lava_testcase_url="$(echo "$comment_body" | awk -F'testcase_url=' '{print $2}' | awk '{print $1}')"
-            testcase_ref="$(echo "$comment_body" | awk -F'testcase_ref=' '{print $2}' | awk '{print $1}' )"
-
           }
           
           set -x
