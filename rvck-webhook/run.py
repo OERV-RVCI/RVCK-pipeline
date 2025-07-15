@@ -28,13 +28,13 @@ def parse_comment(comment: str):
             str(i).split('=',maxsplit=1)
         for i in shlex.split(comment.strip()[6:])]
     }
-    for k in ['lava_template','testcase_url', 'fetch']:
+    for k in ['lava_template','testcase_path', 'fetch']:
         if k in data:
             res[k] = data.pop(k)
     res["testcase_params"] = "\n".join([f"{k}={v}" for k, v in data.items()])
 
     # 检查文件是否存在
-    for k in ['lava_template','testcase_url',]:
+    for k in ['lava_template','testcase_path',]:
         if k in res and os.system(f'gh api repos/RVCK-Project/lavaci/contents/{res[k]}'):
             raise Exception(f"{k}={res[k]} not found in RVCK-Project/lavaci")
 

@@ -5,7 +5,7 @@ set -x
 repo_name=$(echo ${REPO##h*/} | awk -F'.' '{print $1}')
 qemu_job_name=${repo_name}_pr_${ISSUE_ID}
 device_type=$(yq .device_type "${lava_template}")
-testcase_name=$(echo "${testcase_url}" | awk -F'/' '{print $2}')
+testcase_name=$(echo "${testcase_path}" | awk -F'/' '{print $2}')
 testitem_name=${repo_name}_${testcase_name}_${device_type}
 ssh_port=$(od -An -N2 -i /dev/urandom | awk -v min=10000 -v max=20000 '{print min + ($1 % (max - min + 1))}')
 lava_server=lava.oerv.ac.cn
@@ -25,7 +25,7 @@ yq e ".context.extra_options[] |=  sub(\"hostfwd=tcp::10001-:22\", \"hostfwd=tcp
 yq e ".actions[0].deploy.images.kernel.url |= sub(\"\\\${qemu_kernel_image_url}\", \"${kernel_download_url}\")" -i "${lava_template}"
 yq e ".actions[0].deploy.images.rootfs.url |= sub(\"\\\${qemu_rootfs_image_url}\", \"${rootfs_download_url}\")" -i "${lava_template}"
 yq e ".actions[2].test.definitions[0].name |= sub(\"\\\${testitem_name}\",\"${testitem_name}\")" -i "${lava_template}"
-yq e ".actions[2].test.definitions[0].path |= sub(\"\\\${testcase_url}\",\"${testcase_url}\")" -i "${lava_template}"
+yq e ".actions[2].test.definitions[0].path |= sub(\"\\\${testcase_path}\",\"${testcase_path}\")" -i "${lava_template}"
 yq e ".actions[2].test.definitions[0].repository |= sub(\"\\\${testcase_repo}\",\"${testcase_repo}\")" -i "${lava_template}"
 
 if [ "$testcase_params" = "" ]; then

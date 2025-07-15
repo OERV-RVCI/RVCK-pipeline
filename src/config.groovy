@@ -8,7 +8,7 @@ all_params_desc = [
     'kernel_download_url': '内核下载链接',
     'rootfs_download_url': 'rootfs下载链接',
     'lava_template': 'lava测试模板',
-    'testcase_url': '需要执行的用例yaml 文件路径',
+    'testcase_path': '需要执行的用例yaml 文件路径',
     'testcase_params': '测试用例参数,[key=value ...]',
     'testcase_repo': 'lava 仓库地址',
 
@@ -21,7 +21,7 @@ all_params_desc = [
 params_defaultvalue = [
     "testcase_repo": 'https://github.com/RVCK-Project/lavaci.git',
     "lava_template": "lava-job-template/qemu/qemu-ltp.yaml",
-    "testcase_url": "lava-testcases/common-test/ltp/ltp.yaml",
+    "testcase_path": "lava-testcases/common-test/ltp/ltp.yaml",
 ]
 
 // 整合为jenkins params类型, map<参数名, 参数>
@@ -43,7 +43,7 @@ kernel_build_params_keys = [
     "ISSUE_ID",
     "FETCH_REF",
     'lava_template',
-    'testcase_url',
+    'testcase_path',
     'testcase_params',
 ]
 
@@ -62,7 +62,7 @@ lava_trigger_params_keys = [
     "rootfs_download_url",
     'testcase_repo',
     "lava_template",
-    "testcase_url",
+    "testcase_path",
     "testcase_params",
 ]
 
