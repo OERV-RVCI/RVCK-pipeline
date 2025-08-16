@@ -3,7 +3,7 @@ set -e
 set -x
 
 repo_name=$(echo ${REPO##h*/} | awk -F'.' '{print $1}')
-qemu_job_name=${repo_name}_pr_${ISSUE_ID}
+job_name=${repo_name}_pr_${ISSUE_ID}
 device_type=$(yq .device_type "${lava_template}")
 testcase_name=$(echo "${testcase_url}" | awk -F'/' '{print $2}')
 testitem_name=${repo_name}_${testcase_name}_${device_type}
@@ -11,6 +11,7 @@ ssh_port=$(od -An -N2 -i /dev/urandom | awk -v min=10000 -v max=20000 '{print mi
 lava_server=lava.oerv.ac.cn
 lavacli_max_retry=5
 lavacli_retry_delay=30 
+rvck_initrdramfs_url="https://fast-mirror.isrc.ac.cn/openeuler-sig-riscv/openEuler-RISC-V/RVCK/OERV-RVCI/rvck/latest/initramfs.img"
 
 lavacli_admim(){
     command=$1
@@ -24,13 +25,17 @@ lavacli_admim(){
     lavacli --uri https://${lava_admin_token}@${lava_server}/RPC2/ ${command} ${option} ${jobid}
 }
 
-yq e ".job_name |= sub(\"\\\${qemu_job_name}\",\"${qemu_job_name}\")" -i "${lava_template}"
+yq e ".job_name |= sub(\"\\\${job_name}\",\"${job_name}\")" -i "${lava_template}"
 yq e ".context.extra_options[] |=  sub(\"hostfwd=tcp::10001-:22\", \"hostfwd=tcp::${ssh_port}-:22\")" -i "${lava_template}"
 yq e ".actions[0].deploy.images.kernel.url |= sub(\"\\\${qemu_kernel_image_url}\", \"${kernel_download_url}\")" -i "${lava_template}"
 yq e ".actions[0].deploy.images.rootfs.url |= sub(\"\\\${qemu_rootfs_image_url}\", \"${rootfs_download_url}\")" -i "${lava_template}"
 yq e ".actions[2].test.definitions[0].name |= sub(\"\\\${testitem_name}\",\"${testitem_name}\")" -i "${lava_template}"
 yq e ".actions[2].test.definitions[0].path |= sub(\"\\\${testcase_url}\",\"${testcase_url}\")" -i "${lava_template}"
 yq e ".actions[2].test.definitions[0].repository |= sub(\"\\\${testcase_repo}\",\"${testcase_repo}\")" -i "${lava_template}"
+if [ "$repo_name" = "rvck" ]; then
+    initrdramfs_url=${rvck_initrdramfs_url}
+    yq e ".actions[0].deploy.images.initrd = {\"image_arg\": \"-initrd {initrd}\", \"url\": \"${initrdramfs_url}\"}' -i "${lava_template}"
+fi 
 
 if [ "$testcase_params" = "" ]; then
     yq e 'del(.actions[2].test.definitions[0].parameters)' -i "${lava_template}"

@@ -25,6 +25,13 @@ cp arch/riscv/boot/Image "$kernel_result_dir"
 install -m 644 $(find arch/riscv/boot/dts/ -name "*.dtb") "$kernel_result_dir"/dtb
 mv $(find arch/riscv/boot/dts/ -name "th1520*.dtb") "$kernel_result_dir"/dtb/thead
 
+## create module tar
+module_path_name=$(ls "$kernel_result_dir"/lib/modules/)
+module_dir_name=$(basename "$module_path_name")
+tar -cvzf "$kernel_result_dir"/"$module_dir_name".tgz -C "$kernel_result_dir"/lib/modules/ "$module_dir_name"
+
+## create initramfs
+dracut "$kernel_result_dir"/initramfs.img -k "$kernel_result_dir"/lib/modules/"$module_dir_name" "$module_dir_name"
 
 ## publish kernel
 if [ -f "${kernel_result_dir}/Image" ];then
