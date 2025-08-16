@@ -38,6 +38,7 @@ fi
 
 ## publish kernel
 if [ -f "${kernel_result_dir}/Image" ];then
+    rm -fr /mnt/kernel-build-results/"${kernel_result_dir}"
 	cp -vr "${kernel_result_dir}" /mnt/kernel-build-results/
 else
 	echo "Kernel not found!"
