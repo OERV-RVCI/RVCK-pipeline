@@ -32,6 +32,9 @@ tar -cvzf "$kernel_result_dir"/"$module_dir_name".tgz -C "$kernel_result_dir"/li
 
 ## create initramfs
 dracut "$kernel_result_dir"/initramfs.img -k "$kernel_result_dir"/lib/modules/"$module_dir_name" "$module_dir_name"
+if [ "$repo_name" = "rvck" ]; then
+    initrdramfs_url="http://${download_server}/kernel-build-results/${kernel_result_dir}/initramfs.img"
+fi 
 
 ## publish kernel
 if [ -f "${kernel_result_dir}/Image" ];then
@@ -43,4 +46,6 @@ fi
 
 # pass download url
 echo "${kernel_download_url}" > kernel_download_url
+echo "${initrdramfs_url}" > initrdramfs_url
+
 

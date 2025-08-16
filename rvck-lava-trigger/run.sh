@@ -11,7 +11,6 @@ ssh_port=$(od -An -N2 -i /dev/urandom | awk -v min=10000 -v max=20000 '{print mi
 lava_server=lava.oerv.ac.cn
 lavacli_max_retry=5
 lavacli_retry_delay=30 
-rvck_initrdramfs_url="https://fast-mirror.isrc.ac.cn/openeuler-sig-riscv/openEuler-RISC-V/RVCK/OERV-RVCI/rvck/latest/initramfs.img"
 
 lavacli_admim(){
     command=$1
@@ -33,7 +32,6 @@ yq e ".actions[2].test.definitions[0].name |= sub(\"\\\${testitem_name}\",\"${te
 yq e ".actions[2].test.definitions[0].path |= sub(\"\\\${testcase_url}\",\"${testcase_url}\")" -i "${lava_template}"
 yq e ".actions[2].test.definitions[0].repository |= sub(\"\\\${testcase_repo}\",\"${testcase_repo}\")" -i "${lava_template}"
 if [ "$repo_name" = "rvck" ]; then
-    initrdramfs_url=${rvck_initrdramfs_url}
     yq e ".actions[0].deploy.images.initrd = {\"image_arg\": \"-initrd {initrd}\", \"url\": \"${initrdramfs_url}\"}' -i "${lava_template}"
 fi 
 
