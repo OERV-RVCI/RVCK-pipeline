@@ -7,6 +7,7 @@ all_params_desc = [
     
     'kernel_download_url': '内核下载链接',
     'rootfs_download_url': 'rootfs下载链接',
+    'initrdramfs_url': 'initramfs下载链接',
     'lava_template': 'lava测试模板',
     'testcase_url': '需要执行的用例yaml 文件路径',
     'testcase_params': '测试用例参数,[key=value ...]',
@@ -61,6 +62,7 @@ lava_trigger_params_keys = [
     "ISSUE_ID",
     "kernel_download_url",
     "rootfs_download_url",
+    'initrdramfs_url',
     'testcase_repo',
     "lava_template",
     "testcase_url",
