@@ -13,7 +13,11 @@ kernel_download_url="http://${download_server}/kernel-build-results/${kernel_res
 ## build kernel
 
 make distclean
-make openeuler_defconfig
+if [ "$repo_name" = "rvck" ]; then
+    make defconfig
+else
+    make openeuler_defconfig
+fi
 make Image -j$(nproc)
 make modules -j$(nproc)
 make dtbs -j$(nproc)
