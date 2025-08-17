@@ -36,6 +36,7 @@ tar -cvzf "$kernel_result_dir"/"$module_dir_name".tgz -C "$kernel_result_dir"/li
 
 ## create initramfs
 dracut "$kernel_result_dir"/initramfs.img -k "$kernel_result_dir"/lib/modules/"$module_dir_name" "$module_dir_name"
+chmod 0644 "$kernel_result_dir"/initramfs.img
 if [ "$repo_name" = "rvck" ]; then
     initrdramfs_url="http://${download_server}/kernel-build-results/${kernel_result_dir}/initramfs.img"
 fi 
