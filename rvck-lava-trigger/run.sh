@@ -26,8 +26,8 @@ lavacli_admim(){
 
 yq e ".job_name |= sub(\"\\\${job_name}\",\"${job_name}\")" -i "${lava_template}"
 yq e ".context.extra_options[] |=  sub(\"hostfwd=tcp::10001-:22\", \"hostfwd=tcp::${ssh_port}-:22\")" -i "${lava_template}"
-yq e ".actions[0].deploy.images.kernel.url |= sub(\"\\\${qemu_kernel_image_url}\", \"${kernel_download_url}\")" -i "${lava_template}"
-yq e ".actions[0].deploy.images.rootfs.url |= sub(\"\\\${qemu_rootfs_image_url}\", \"${rootfs_download_url}\")" -i "${lava_template}"
+yq e ".actions[0].deploy.images.kernel.url |= sub(\"\\\${kernel_image_url}\", \"${kernel_download_url}\")" -i "${lava_template}"
+yq e ".actions[0].deploy.images.rootfs.url |= sub(\"\\\${rootfs_image_url}\", \"${rootfs_download_url}\")" -i "${lava_template}"
 yq e ".actions[2].test.definitions[0].name |= sub(\"\\\${testitem_name}\",\"${testitem_name}\")" -i "${lava_template}"
 yq e ".actions[2].test.definitions[0].path |= sub(\"\\\${testcase_url}\",\"${testcase_url}\")" -i "${lava_template}"
 yq e ".actions[2].test.definitions[0].repository |= sub(\"\\\${testcase_repo}\",\"${testcase_repo}\")" -i "${lava_template}"
