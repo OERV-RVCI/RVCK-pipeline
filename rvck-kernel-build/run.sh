@@ -5,7 +5,7 @@ set -x
 
 repo_name="$(echo "${REPO##h*/}" | awk -F'.' '{print $1}')"
 kernel_result_dir="${repo_name}_pr_${ISSUE_ID}"
-download_server=10.213.6.54
+download_server=10.211.102.58
 
 kernel_download_url="http://${download_server}/kernel-build-results/${kernel_result_dir}/Image"
 
