@@ -86,8 +86,8 @@ node('jenkins-agent-docker-sg2042') {
                         }
 
             lava_trigger_params += [
-                string(name: 'rootfs_download_url', value: readFile('work/rootfs_download_url')),
                 string(name: 'kernel_download_url', value: readFile('work/kernel_download_url')),
+                string(name: 'initrdramfs_url', value: readFile('work/initrdramfs_url')),
             ]
 
             echo "lava_trigger_params: ${lava_trigger_params}"
