@@ -35,7 +35,11 @@ module_dir_name=$(basename "$module_path_name")
 tar -cvzf "$kernel_result_dir"/"$module_dir_name".tgz -C "$kernel_result_dir"/lib/modules/ "$module_dir_name"
 
 ## create initramfs
-sudo dracut "$kernel_result_dir"/initramfs.img -k "$kernel_result_dir"/lib/modules/"$module_dir_name" "$module_dir_name"
+if [ -d /lib/modules/"$module_dir_name" ];then
+    rm -fr /lib/modules/"$module_dir_name"
+fi
+sudo cp -r "$kernel_result_dir"/lib/modules/"$module_dir_name"  /lib/modules/
+sudo dracut "$kernel_result_dir"/initramfs.img "$module_dir_name"
 sudo chmod 0644 "$kernel_result_dir"/initramfs.img
 if [ "$repo_name" = "rvck" ]; then
     initrdramfs_url="http://${download_server}/kernel-build-results/${kernel_result_dir}/initramfs.img"
