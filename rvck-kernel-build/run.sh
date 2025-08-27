@@ -47,7 +47,7 @@ sudo dnf group install -y "Minimal Install" --forcearch riscv64 --installroot ${
 sudo dnf install -y dracut --forcearch riscv64 --installroot ${initramfs_chroot} 
 sudo cp -r "$kernel_result_dir"/lib/modules/"$module_dir_name" ${initramfs_chroot}/lib/modules/
 sudo chroot ${initramfs_chroot} /bin/bash -c "dracut /root/initramfs.img --no-hostonly --kver ${module_dir_name}"
-cp ${initramfs_chroot}/root/initramfs.img "$kernel_result_dir"/
+sudo cp ${initramfs_chroot}/root/initramfs.img "$kernel_result_dir"/
 sudo chmod 0644 "$kernel_result_dir"/initramfs.img
 # Unmount filesystems if they exist
 if [ -d "${initramfs_chroot}/dev/pts" ]; then
