@@ -34,8 +34,40 @@ module_dir_name=$(basename "$module_path_name")
 tar -cvzf "$kernel_result_dir"/"$module_dir_name".tgz -C "$kernel_result_dir"/lib/modules/ "$module_dir_name"
 
 ## create initramfs
-sudo dracut "$kernel_result_dir"/initramfs.img -k "$kernel_result_dir"/lib/modules/"$module_dir_name" "$module_dir_name"
+initramfs_chroot=$(mktemp -d)
+mkdir -p ${initramfs_chroot}/dev ${initramfs_chroot}/proc ${initramfs_chroot}/sys ${initramfs_chroot}/run
+sudo mount --bind /dev ${initramfs_chroot}/dev
+sudo mount --bind /dev/pts ${initramfs_chroot}/dev/pts
+sudo mount --bind /dev/shm ${initramfs_chroot}/dev/shm
+sudo mount --bind /run ${initramfs_chroot}/run
+sudo mount -t proc proc ${initramfs_chroot}/proc
+sudo mount -t sysfs sys ${initramfs_chroot}/sys
+sudo dnf group install -y "Minimal Install" --forcearch riscv64 --installroot ${initramfs_chroot}
+sudo dnf install -y dracut --forcearch riscv64 --installroot ${initramfs_chroot} 
+sudo cp -r "$kernel_result_dir"/lib/modules/"$module_dir_name" ${initramfs_chroot}/lib/modules/
+sudo chroot ${initramfs_chroot} /bin/bash -c "dracut /root/initramfs.img --no-hostonly --kver ${module_dir_name}"
+sudo cp ${initramfs_chroot}/root/initramfs.img "$kernel_result_dir"/
 sudo chmod 0644 "$kernel_result_dir"/initramfs.img
+# Unmount filesystems if they exist
+if [ -d "${initramfs_chroot}/dev/pts" ]; then
+    umount ${initramfs_chroot}/dev/pts 2>/dev/null || true
+fi
+if [ -d "${initramfs_chroot}/dev/shm" ]; then
+    umount ${initramfs_chroot}/dev/shm 2>/dev/null || true
+fi
+if [ -d "${initramfs_chroot}/dev" ]; then
+    umount ${initramfs_chroot}/dev 2>/dev/null || true
+fi
+if [ -d "${initramfs_chroot}/proc" ]; then
+    umount ${initramfs_chroot}/proc 2>/dev/null || true
+fi
+if [ -d "${initramfs_chroot}/sys" ]; then
+    umount ${initramfs_chroot}/sys 2>/dev/null || true
+fi
+if [ -d "${initramfs_chroot}/run" ]; then
+    umount ${initramfs_chroot}/run 2>/dev/null || true
+fi
+
 if [ "$repo_name" = "rvck" ]; then
     initrdramfs_url="http://${download_server}/kernel-build-results/${kernel_result_dir}/initramfs.img"
 fi 

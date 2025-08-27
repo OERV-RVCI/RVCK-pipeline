@@ -33,6 +33,7 @@ yq e ".actions[2].test.definitions[0].path |= sub(\"\\\${testcase_path}\",\"${te
 yq e ".actions[2].test.definitions[0].repository |= sub(\"\\\${testcase_repo}\",\"${testcase_repo}\")" -i "${lava_template}"
 if [ "$repo_name" = "rvck" ]; then
     yq e ".actions[0].deploy.images.initrd = {\"image_arg\": \"-initrd {initrd}\", \"url\": \"${initrdramfs_url}\"}" -i "${lava_template}"
+    sed -i "s@root=/dev/vda@root=/dev/vdb@g" "${lava_template}"
 fi 
 
 if [ "$testcase_params" = "" ]; then
